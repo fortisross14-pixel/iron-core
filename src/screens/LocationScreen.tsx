@@ -13,6 +13,7 @@ import { GateLocationView } from './locations/GateLocationView';
 import { JunkyardLocationView } from './locations/JunkyardLocationView';
 import { AcademyLocationView } from './locations/AcademyLocationView';
 import { TournamentHallLocationView } from './locations/TournamentHallLocationView';
+import { OfficialsHallLocationView } from './locations/OfficialsHallLocationView';
 import { FactionHouseLocationView } from './locations/FactionHouseLocationView';
 import { SquareLocationView } from './locations/SquareLocationView';
 
@@ -45,6 +46,7 @@ export function LocationScreen() {
         {loc.kind === 'junkyard' && <JunkyardLocationView locationId={loc.id} />}
         {loc.kind === 'academy' && <AcademyLocationView locationId={loc.id} />}
         {loc.kind === 'tournament_hall' && <TournamentHallLocationView locationId={loc.id} />}
+        {loc.kind === 'officials_hall' && <OfficialsHallLocationView locationId={loc.id} />}
         {loc.kind === 'faction_house' && <FactionHouseLocationView locationId={loc.id} />}
         {loc.kind === 'square' && <SquareLocationView locationId={loc.id} />}
       </div>

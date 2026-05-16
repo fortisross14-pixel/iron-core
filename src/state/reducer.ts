@@ -112,6 +112,12 @@ export function reducer(state: GameState, action: Action): GameState {
       const choice = scene.choices[action.choiceIndex];
       if (!choice) return state;
       let s: GameState = { ...state, dialogStack: state.dialogStack.slice(0, -1) };
+      // If this scene had a oncePerFlag, set it now so the trigger doesn't refire.
+      if (scene.trigger?.oncePerFlag) {
+        const f = new Set(s.storyFlags);
+        f.add(scene.trigger.oncePerFlag);
+        s = { ...s, storyFlags: f };
+      }
       for (const effect of choice.effects ?? []) {
         s = applyEffect(s, effect);
       }
@@ -478,6 +484,51 @@ export function reducer(state: GameState, action: Action): GameState {
         },
       };
 
+    // -------- tournaments --------
+    case 'START_TOURNAMENT': {
+      return {
+        ...state,
+        activeTournament: {
+          tournamentId: action.tournamentId,
+          bracketIndex: 0,
+          teamBotIds: action.teamBotIds,
+          fameAccumulated: 0,
+          prizeAccumulated: 0,
+        },
+      };
+    }
+    case 'TOURNAMENT_END': {
+      return { ...state, activeTournament: null };
+    }
+    case 'TOURNAMENT_NEXT_ROUND': {
+      if (!state.activeTournament) return state;
+      return {
+        ...state,
+        activeTournament: {
+          ...state.activeTournament,
+          bracketIndex: state.activeTournament.bracketIndex + 1,
+        },
+      };
+    }
+    case 'EVENT_PROGRESS': {
+      const current = state.eventProgress[action.eventId] ?? -1;
+      if (action.fightIndex <= current) return state;  // no regression
+      return {
+        ...state,
+        eventProgress: { ...state.eventProgress, [action.eventId]: action.fightIndex },
+      };
+    }
+    case 'CHAMPION_WIN': {
+      const current = state.championWins[action.eventId] ?? 0;
+      return {
+        ...state,
+        championWins: { ...state.championWins, [action.eventId]: current + 1 },
+      };
+    }
+    case 'PROMOTE_TIER': {
+      return { ...state, playerTier: action.tier };
+    }
+
     // -------- combat side effects --------
     case 'CONSUME_ITEM': {
       const owned = state.items[action.itemId] ?? 0;
@@ -491,11 +542,10 @@ export function reducer(state: GameState, action: Action): GameState {
       const d = state.postFight;
       if (!d) return state;
       // money + xp + materials + loot, applied to participants
-      const ageTick = d.source === 'tournament' ? 0.5 : 0.1;
       const bots = state.bots.map(b => {
         const participated = d.participants.includes(b.id);
-        if (!participated) return { ...b, age: Math.min(b.maxAge, b.age + 0.05) };
-        let u = { ...b, age: Math.min(b.maxAge, b.age + ageTick) };
+        if (!participated) return b;
+        let u = { ...b };
         // XP
         u.xp += d.xpReward;
         while (u.xp >= u.xpToNext) {
@@ -521,6 +571,11 @@ export function reducer(state: GameState, action: Action): GameState {
       for (const m of d.materialDrops) {
         materials[m.id] = (materials[m.id] ?? 0) + m.count;
       }
+      // Fame & defeated trainers
+      const defeatedTrainerIds = new Set(state.defeatedTrainerIds);
+      if (d.won && d.defeatedTrainerId) {
+        defeatedTrainerIds.add(d.defeatedTrainerId);
+      }
       // Achievements
       const ach = { ...state.achievements, totalBattles: state.achievements.totalBattles + 1 };
       if (d.source === 'junkyard' && d.won) ach.junkyardWins += 1;
@@ -528,6 +583,8 @@ export function reducer(state: GameState, action: Action): GameState {
         ...state,
         bots,
         money: state.money + d.prize,
+        fame: state.fame + d.fameGained,
+        defeatedTrainerIds,
         weaponInv,
         armorInv,
         diskInv,
@@ -561,10 +618,15 @@ function applyEffect(state: GameState, effect: import('../data/story').SceneEffe
       return { ...state, storyFlags: f };
     }
     case 'giveBot': {
-      const bot = createBot(effect.modelId, effect.firstName, 1);
-      if (!bot) return state;
-      const d = new Set(state.discovered); d.add(bot.modelId);
-      return { ...state, bots: [...state.bots, bot], discovered: d };
+      // Every mecha acquisition routes through NamingScreen.
+      // The actual bot creation happens via CONFIRM_NAMING after the player
+      // picks a name.
+      return {
+        ...state,
+        pendingNamingModelId: effect.modelId,
+        pendingNamingIsStarter: true,
+        scene: 'naming',
+      };
     }
     case 'giveCredits':
       return { ...state, money: state.money + effect.amount };
@@ -572,6 +634,13 @@ function applyEffect(state: GameState, effect: import('../data/story').SceneEffe
       const c = new Set(state.unlockedCities); c.add(effect.cityId);
       return { ...state, unlockedCities: c };
     }
+    case 'openNamingForModel':
+      return {
+        ...state,
+        pendingNamingModelId: effect.modelId,
+        pendingNamingIsStarter: true,
+        scene: 'naming',
+      };
     default:
       return state;
   }

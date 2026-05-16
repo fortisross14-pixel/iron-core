@@ -51,7 +51,7 @@ export function BattleSetupScreen() {
                 {getBotFullName(bot)}
                 <span style={{ ...chipStyle, color: tColor, borderColor: tColor }}>{TYPE_INFO[m.type].name}</span>
               </div>
-              <div style={subStyle}>LV {bot.level} · {bot.age.toFixed(1)}y · PWR {power}</div>
+              <div style={subStyle}>LV {bot.level} · PWR {power}</div>
             </div>
             <div style={indicatorStyle}>{sel ? '✓' : '+'}</div>
           </button>

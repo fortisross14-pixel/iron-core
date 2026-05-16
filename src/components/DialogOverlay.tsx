@@ -28,15 +28,15 @@ export function DialogOverlay() {
   const hasChoices = isLast && (scene.choices?.length ?? 0) > 0;
 
   return (
-    <div style={overlayStyle} onClick={() => !hasChoices && dispatch({ type: 'DIALOG_ADVANCE' })}>
-      <div style={panelStyle} onClick={(e) => e.stopPropagation()}>
+    <div style={overlayStyle}>
+      <div style={panelStyle} onClick={() => !hasChoices && dispatch({ type: 'DIALOG_ADVANCE' })}>
         {speakerInfo.name && (
           <div style={{ ...speakerStyle, color: speakerInfo.color }}>{speakerInfo.name}</div>
         )}
         <div style={textStyle}>{line.text}</div>
 
         {hasChoices ? (
-          <div style={choicesStyle}>
+          <div style={choicesStyle} onClick={e => e.stopPropagation()}>
             {scene.choices!.map((c, i) => (
               <Button key={i} variant="secondary" onClick={() => dispatch({ type: 'DIALOG_CHOICE', choiceIndex: i })}>
                 {c.label}
@@ -45,7 +45,7 @@ export function DialogOverlay() {
           </div>
         ) : (
           <div style={hintStyle}>
-            {top.lineIndex + 1} / {scene.lines.length} · tap to continue →
+            {top.lineIndex + 1} / {scene.lines.length} · TAP TO CONTINUE →
           </div>
         )}
       </div>
@@ -61,7 +61,6 @@ const overlayStyle: CSSProperties = {
   flexDirection: 'column',
   justifyContent: 'flex-end',
   zIndex: theme.z.modal,
-  cursor: 'pointer',
   animation: 'ic-fade-in 0.3s ease',
 };
 
@@ -72,7 +71,7 @@ const panelStyle: CSSProperties = {
   maxWidth: theme.maxWidth,
   width: '100%',
   margin: '0 auto',
-  cursor: 'default',
+  cursor: 'pointer',
 };
 
 const speakerStyle: CSSProperties = {

@@ -72,4 +72,12 @@ export type Action =
   | { type: 'NUDGE_ALIGNMENT'; moral?: number; posture?: number }
   // ---- combat side effects ----
   | { type: 'CONSUME_ITEM'; itemId: string }
-  | { type: 'APPLY_REWARDS' };
+  | { type: 'APPLY_REWARDS' }
+  // ---- tournaments ----
+  | { type: 'START_TOURNAMENT'; tournamentId: string; teamBotIds: string[] }
+  | { type: 'TOURNAMENT_NEXT_ROUND' }
+  | { type: 'TOURNAMENT_END' }
+  // ---- events / tier progression ----
+  | { type: 'EVENT_PROGRESS'; eventId: string; fightIndex: number }
+  | { type: 'CHAMPION_WIN'; eventId: string }
+  | { type: 'PROMOTE_TIER'; tier: import('../data/trainers').TrainerTier };

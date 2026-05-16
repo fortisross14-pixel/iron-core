@@ -1,35 +1,34 @@
 /**
- * World structure: cities → locations (buildings/areas within a city).
+ * LOCATIONS — back-compat facade.
  *
- * Hometown (Ironhaven) is unlocked at the start. Other cities/locations are
- * gated by story progress and won battles.
+ * The source of truth is now /data/places/*.ts and /data/cities.ts.
+ * This file derives the legacy LocationData/City shape from them so existing
+ * screens don't need to change.
  *
- * Each location has zero or more EVENTS. Events are battles, shops, story
- * triggers, or repeatable grinds. The screen for a location is registered
- * separately in App.tsx so each can be its own React component.
+ * New code should import directly from /data/places and /data/cities.
+ * This facade is here to keep the migration small.
  */
 
 import type { FactionId } from './factions';
+import { CITIES as NEW_CITIES } from './cities';
+import type { City as NewCity } from './cities';
+import { ALL_PLACES, placesForCity } from './places';
+import type { Place } from './places';
+
+// Legacy LocationKind: the visual category. Derived from Place.kind + a
+// per-place "viewId" override for special story places (home, workshop, etc).
+export type LocationKind =
+  | 'home' | 'workshop' | 'market' | 'gate' | 'junkyard'
+  | 'academy' | 'tournament_hall' | 'faction_house' | 'officials_hall'
+  | 'square' | 'guild';
 
 export interface City {
   id: string;
   name: string;
   region: string;
   desc: string;
-  locked: boolean;       // unlocked dynamically; this is just the initial state
+  locked: boolean;
 }
-
-export type LocationKind =
-  | 'home'           // player's house — story dialogues, sleep, save
-  | 'workshop'       // uncle's place
-  | 'market'         // buy/sell
-  | 'gate'           // exit fight (Krait, etc.)
-  | 'junkyard'       // wild grinder
-  | 'academy'        // high school tournament
-  | 'tournament_hall'// official circuit registration
-  | 'faction_house'  // faction-aligned building (one per faction in city 2)
-  | 'square'         // city center, hub area
-  | 'guild';         // wandering Operators
 
 export interface LocationData {
   id: string;
@@ -37,153 +36,69 @@ export interface LocationData {
   name: string;
   kind: LocationKind;
   desc: string;
-  shortDesc: string;        // one-line tagline shown on the city map
+  shortDesc: string;
   factionAlignment?: FactionId;
-  // a location is visitable iff requires.* are all true in the game state
-  requires: {
-    storyFlags?: string[];          // all of these flags must be set
-    location?: string;              // this other location must have been visited
+  requires: { storyFlags?: string[]; location?: string };
+}
+
+// Map from new Place to legacy LocationKind based on id/kind heuristics.
+// Per-place overrides for the screen routing.
+function placeToLegacyKind(p: Place): LocationKind {
+  // Hard-coded view overrides for special places that have dedicated screens
+  if (p.id === 'iron_home') return 'home';
+  if (p.id === 'iron_workshop') return 'workshop';
+  if (p.id === 'iron_gate') return 'gate';
+  if (p.id === 'volt_square' || p.id === 'holl_square') return 'square';
+
+  // Generic by kind
+  switch (p.kind) {
+    case 'story_place':    return 'home';          // fallback; specific ids above override
+    case 'grind_place':    return 'junkyard';
+    case 'fight_story':    return 'gate';
+    case 'tournament':
+      // tournament places: route to specialized view
+      if (p.id === 'iron_academy') return 'academy';
+      if (p.id === 'holl_officials') return 'officials_hall';
+      return 'tournament_hall';
+    case 'store':          return 'market';
+    case 'faction_house':  return 'faction_house';
+    case 'other':          return 'home';
+  }
+}
+
+function placeToLocationData(p: Place): LocationData {
+  return {
+    id: p.id,
+    cityId: p.cityId,
+    name: p.name,
+    kind: placeToLegacyKind(p),
+    desc: p.desc,
+    shortDesc: p.shortDesc,
+    factionAlignment: p.kind === 'faction_house' ? p.factionId : undefined,
+    requires: {
+      storyFlags: p.requires?.storyFlags,
+    },
   };
 }
 
-// ============================================================
-// CITY 1 — IRONHAVEN (hometown)
-// ============================================================
+function cityToLegacyCity(c: NewCity): City {
+  return {
+    id: c.id,
+    name: c.name,
+    region: c.region,
+    desc: c.desc,
+    locked: c.locked,
+  };
+}
 
-export const CITIES: Record<string, City> = {
-  ironhaven: {
-    id: 'ironhaven',
-    name: 'Ironhaven',
-    region: 'Hometown',
-    desc: 'A foundry town with a school, a market, and a road out.',
-    locked: false,
-  },
-  voltspire: {
-    id: 'voltspire',
-    name: 'Voltspire',
-    region: 'Storm City',
-    desc: 'A larger city, two days east. Faction houses, official circuit.',
-    locked: true,        // unlocks after Junkyard milestone
-  },
-};
+export const CITIES: Record<string, City> = Object.fromEntries(
+  Object.values(NEW_CITIES).map(c => [c.id, cityToLegacyCity(c)]),
+);
 
-export const LOCATIONS: Record<string, LocationData> = {
-  // ---- IRONHAVEN ----
-  iron_home: {
-    id: 'iron_home',
-    cityId: 'ironhaven',
-    name: 'Your House',
-    kind: 'home',
-    desc: 'Your room is small. There is a poster of the last Apex champion on the wall.',
-    shortDesc: 'Where you grew up.',
-    requires: {},
-  },
-  iron_workshop: {
-    id: 'iron_workshop',
-    cityId: 'ironhaven',
-    name: "Uncle's Workshop",
-    kind: 'workshop',
-    desc: 'Your uncle\'s workshop smells like ozone and machine oil. He builds mechs here on commission.',
-    shortDesc: 'Your uncle\'s mecha shop.',
-    requires: {},
-  },
-  iron_market: {
-    id: 'iron_market',
-    cityId: 'ironhaven',
-    name: 'Ironhaven Market',
-    kind: 'market',
-    desc: 'A handful of stalls along the main street. Weapons, armor, disks, repair kits.',
-    shortDesc: 'Buy and sell.',
-    requires: {},
-  },
-  iron_academy: {
-    id: 'iron_academy',
-    cityId: 'ironhaven',
-    name: 'Ironhaven Academy',
-    kind: 'academy',
-    desc: 'The high school. There\'s a small tournament arena out back where graduating seniors face off.',
-    shortDesc: 'Your old high school.',
-    requires: {},
-  },
-  iron_gate: {
-    id: 'iron_gate',
-    cityId: 'ironhaven',
-    name: "Smelter's Gate",
-    kind: 'gate',
-    desc: 'The east road out of Ironhaven. A heavy-set man is leaning against the gate post.',
-    shortDesc: 'The road out of town.',
-    requires: {},
-  },
-  iron_junkyard: {
-    id: 'iron_junkyard',
-    cityId: 'ironhaven',
-    name: 'The Junkyard',
-    kind: 'junkyard',
-    desc: 'A scrap field outside town. Old abandoned mechas wander here, half-feral. Krait sent you to train.',
-    shortDesc: 'Train against abandoned mechs.',
-    requires: { storyFlags: ['krait_defeated_player'] },
-  },
+export const LOCATIONS: Record<string, LocationData> = Object.fromEntries(
+  ALL_PLACES.map(p => [p.id, placeToLocationData(p)]),
+);
 
-  // ---- VOLTSPIRE ----
-  // Unlocked after the player wins at Smelter's Gate (rematch with Krait).
-  volt_square: {
-    id: 'volt_square',
-    cityId: 'voltspire',
-    name: 'Voltspire Square',
-    kind: 'square',
-    desc: 'The city center. Storm pylons crackle overhead. Three faction houses ring the plaza.',
-    shortDesc: 'The plaza. All roads meet here.',
-    requires: { storyFlags: ['krait_rematch_won'] },
-  },
-  volt_market: {
-    id: 'volt_market',
-    cityId: 'voltspire',
-    name: 'Voltspire Market',
-    kind: 'market',
-    desc: 'Better selection than Ironhaven. Real weapons, rare disks, contract chips for new chassis.',
-    shortDesc: 'Bigger market. Better stock.',
-    requires: { storyFlags: ['krait_rematch_won'] },
-  },
-  volt_tournament: {
-    id: 'volt_tournament',
-    cityId: 'voltspire',
-    name: 'Voltspire Tournament Hall',
-    kind: 'tournament_hall',
-    desc: 'The official circuit\'s eastern hub. Bronze through Gold leagues run here every season.',
-    shortDesc: 'Official tournament registration.',
-    requires: { storyFlags: ['krait_rematch_won'] },
-  },
-  volt_natures: {
-    id: 'volt_natures',
-    cityId: 'voltspire',
-    name: "Nature's Own Grove",
-    kind: 'faction_house',
-    factionAlignment: 'naturesOwn',
-    desc: 'A walled garden inside the city. Old bio-frames graze in the back. The Grove-Keeper greets you without standing up.',
-    shortDesc: "Faction house · Nature's Own.",
-    requires: { storyFlags: ['krait_rematch_won'] },
-  },
-  volt_elemental: {
-    id: 'volt_elemental',
-    cityId: 'voltspire',
-    name: 'The Elementalist Camp',
-    kind: 'faction_house',
-    factionAlignment: 'elementalists',
-    desc: 'A circle of wagons just inside the western wall. Smoke, water-pumps, salt-burned banners. The Convergence is in town this season.',
-    shortDesc: 'Faction house · The Elementalists.',
-    requires: { storyFlags: ['krait_rematch_won'] },
-  },
-  volt_industrial: {
-    id: 'volt_industrial',
-    cityId: 'voltspire',
-    name: 'The Industrial Hall',
-    kind: 'faction_house',
-    factionAlignment: 'industrials',
-    desc: 'A clean stone building with a brass door. A receptionist takes your name on a paper ledger.',
-    shortDesc: 'Faction house · The Industrials.',
-    requires: { storyFlags: ['krait_rematch_won'] },
-  },
-};
-
-export const LOCATIONS_BY_CITY = (cityId: string): LocationData[] =>
-  Object.values(LOCATIONS).filter(l => l.cityId === cityId);
+export function LOCATIONS_BY_CITY(cityId: string): LocationData[] {
+  return placesForCity(cityId).map(placeToLocationData);
+}

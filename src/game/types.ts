@@ -20,8 +20,6 @@ export interface Bot {
   level: number;
   xp: number;
   xpToNext: number;
-  age: number;
-  maxAge: number;
   maxHp: number;
   weapon: string | null;
   armor: string | null;

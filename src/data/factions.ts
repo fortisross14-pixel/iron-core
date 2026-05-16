@@ -80,7 +80,7 @@ export const FACTIONS: Record<FactionId, Faction> = {
       "machines that ship on schedule. They are at war with Nature's Own over " +
       "land-rights, and with the Elementalists over circuit access. They are not " +
       "evil, but they are not patient either.",
-    preferredTypes: ['steel', 'lightning'],
+    preferredTypes: ['steel', 'lightning', 'mental'],
     affinityBonus: 1.10,
     temperament: 'warring',
     alignment: { moral: -10, posture: 40 },

@@ -21,11 +21,17 @@ export function PostFightScreen() {
       <div style={{ ...bannerStyle, background: d.won ? theme.color.success : theme.color.danger }}>
         {d.won ? 'VICTORY' : 'DEFEAT'}
       </div>
-      <div style={subStyle}>{d.title}</div>
+      <div style={subStyle}>
+        {d.title}
+        {d.isTournamentMidBracket && ' · ROUND COMPLETE'}
+      </div>
 
       <div style={rewardBoxStyle}>
         <div style={rewardLineStyle}><span>PRIZE</span><span style={rewardValueStyle}>+{d.prize.toLocaleString()} CR</span></div>
         <div style={rewardLineStyle}><span>XP / FIGHTER</span><span style={rewardValueStyle}>+{d.xpReward}</span></div>
+        {d.fameGained > 0 && (
+          <div style={rewardLineStyle}><span>FAME</span><span style={{ ...rewardValueStyle, color: theme.color.accent }}>+{d.fameGained}</span></div>
+        )}
       </div>
 
       {d.summary && (
@@ -75,7 +81,7 @@ export function PostFightScreen() {
       )}
 
       <Button full onClick={ackPostFight} style={{ marginTop: theme.space.lg }}>
-        CONTINUE →
+        {d.isTournamentMidBracket ? 'NEXT ROUND →' : 'CONTINUE →'}
       </Button>
     </Shell>
   );

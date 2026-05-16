@@ -16,8 +16,6 @@ export function createBot(modelId: string, firstName?: string, level = 1): Bot |
     level,
     xp: 0,
     xpToNext: level * 100,
-    age: 0,
-    maxAge: 10,
     maxHp: model.maxHp,
     weapon: null,
     armor: null,

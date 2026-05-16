@@ -9,8 +9,11 @@ import { CombatScreen } from './screens/CombatScreen';
 import { PostFightScreen } from './screens/PostFightScreen';
 import { StableScreen } from './screens/StableScreen';
 import { AssignItemScreen } from './screens/AssignItemScreen';
+import { RankingScreen } from './screens/RankingScreen';
+import { MedalsScreen } from './screens/MedalsScreen';
 import { DialogOverlay } from './components/DialogOverlay';
 import { Toast } from './components/Toast';
+import { BottomNav } from './components/BottomNav';
 
 /**
  * Scene router. Each scene has one top-level component.
@@ -36,12 +39,15 @@ export function App() {
     case 'postfight':     body = <PostFightScreen />; break;
     case 'stable':        body = <StableScreen />; break;
     case 'assignItem':    body = <AssignItemScreen />; break;
+    case 'ranking':       body = <RankingScreen />; break;
+    case 'medals':        body = <MedalsScreen />; break;
     default:              body = <IntroScreen />;
   }
 
   return (
     <>
       {body}
+      <BottomNav />
       <DialogOverlay />
       <Toast />
     </>

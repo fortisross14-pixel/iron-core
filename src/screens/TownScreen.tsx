@@ -8,6 +8,7 @@ import { Button } from '../components/Button';
 const KIND_ICON: Record<LocationKind, string> = {
   home: '⌂', workshop: '⚙', market: '☉', gate: '⌷',
   junkyard: '◌', academy: '⌬', tournament_hall: '◇',
+  officials_hall: '✦',
   faction_house: '◈', square: '◯', guild: '◑',
 };
 

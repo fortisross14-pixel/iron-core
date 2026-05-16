@@ -48,15 +48,6 @@ export function getBotStats(
   if (bot.weapon && WEAPONS[bot.weapon]) attack += WEAPONS[bot.weapon].atkBonus;
   if (bot.armor && ARMORS[bot.armor]) defense += ARMORS[bot.armor].defBonus;
 
-  // age decay (after age 7, stats decline; intelligence rises)
-  if (bot.age > 7) {
-    const decay = 1 - ((bot.age - 7) * 0.04);
-    attack *= decay;
-    defense *= decay;
-    speed *= decay;
-    intelligence *= 1 + ((bot.age - 7) * 0.015);
-  }
-
   // disk stat boosts
   attack += bot.statBoosts.attack;
   defense += bot.statBoosts.defense;

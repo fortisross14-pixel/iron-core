@@ -18,6 +18,11 @@ import { getRank } from '../data/ranks';
 import { getBotFullName } from '../game/display';
 import { MODELS } from '../data/models';
 
+import { TOURNAMENTS } from '../data/tournaments';
+import { TIER_TESTS } from '../data/tests';
+import { ALL_TRAINERS } from '../data/trainers';
+import { fameRewardForDefeating } from '../game/fame';
+
 /**
  * useBattleOrchestrator: high-level commands for combat flow.
  *
@@ -71,8 +76,6 @@ export function useBattleOrchestrator() {
       message: null,
       summary: { dmgDealt: 0, dmgTaken: 0, hits: 0, crits: 0, sigsUsed: 0, statusDamage: 0 },
       playerSelectedIds: state.battleSetupTeam,
-      tournamentRound: battle.tournamentRound,
-      maxTournamentRound: battle.maxTournamentRound,
       source: battle.source,
       sourceId: battle.sourceId,
     };
@@ -270,9 +273,23 @@ export function useBattleOrchestrator() {
     const lootDrops: LootDrop[] = [];
     const materialDrops: { id: string; count: number }[] = [];
 
+    // ---- fame calculation ----
+    let fameGained = 0;
+    let defeatedTrainerId: string | undefined;
+    if (won) {
+      if (battle.trainerId) {
+        const already = state.defeatedTrainerIds.has(battle.trainerId);
+        fameGained += fameRewardForDefeating(battle.trainerId, already);
+        defeatedTrainerId = battle.trainerId;
+      }
+      // tournament/battle-config flat bonus (per fight, plus the per-trainer reward)
+      if (battle.fameReward) {
+        fameGained += battle.fameReward;
+      }
+    }
+
     if (won) {
       if (battle.source === 'junkyard') {
-        // wild bots drop materials
         const drops = Math.random() < 0.85 ? 1 : 0;
         for (let i = 0; i < drops + 1; i++) {
           if (Math.random() < 0.8) {
@@ -280,7 +297,6 @@ export function useBattleOrchestrator() {
             materialDrops.push({ id: m.id, count: 1 });
           }
         }
-        // tiny chance of a basic disk drop
         if (Math.random() < 0.10) {
           lootDrops.push({ kind: 'disk', id: 'stat_atk_1' });
         }
@@ -293,13 +309,55 @@ export function useBattleOrchestrator() {
           const wList = Object.values(WEAPONS).filter(w => w.price <= prize / 2);
           if (wList.length) lootDrops.push({ kind: 'weapon', id: wList[Math.floor(Math.random() * wList.length)].id });
         }
+      } else if (battle.source === 'trainer') {
+        title = 'Trainer Match';
       }
     }
+
+    // detect multi-fight event progress
+    const event = battle.eventId
+      ? (TOURNAMENTS[battle.eventId] ?? TIER_TESTS[battle.eventId])
+      : null;
+    const fightIdx = battle.eventFightIndex ?? -1;
+    const hasMoreFights = !!event && fightIdx >= 0 && fightIdx < event.bracket.length - 1;
+    const isEventMidBracket = won && hasMoreFights;
+    const isEventChampion = won && !!event && !hasMoreFights;
+
+    // ---- Tournament REPLAY multiplier (0.5× rounded) ----
+    // If this is a tournament (not a tier test) and the championFlag is already
+    // set, the player has cleared it before. Apply 0.5× to fame and prize.
+    // (Tier tests are not re-enterable, so no multiplier needed.)
+    const isReplay = !!event
+      && event.kind === 'tournament'
+      && !!event.championFlag
+      && state.storyFlags.has(event.championFlag);
+    if (isReplay && won) {
+      fameGained = Math.round(fameGained * 0.5);
+      prize = Math.round(prize * 0.5);
+    }
+
+    // add champion bonus if we just won the final fight of the event
+    let championFlagsToAdd: string[] = [];
+    let championCityToUnlock: string | undefined;
+    if (isEventChampion && event) {
+      // champion bonus also halved on replay
+      const champFame = isReplay ? Math.round(event.championFameBonus * 0.5) : event.championFameBonus;
+      const champPrize = isReplay ? Math.round(event.championPrizeBonus * 0.5) : event.championPrizeBonus;
+      prize += champPrize;
+      fameGained += champFame;
+      if (event.championFlag) championFlagsToAdd.push(event.championFlag);
+      if (event.championCityUnlock) championCityToUnlock = event.championCityUnlock;
+    }
+
+    const baseFlags = won ? (battle.onWinFlags ?? []) : (battle.onLossFlags ?? []);
+    const allFlags = [...baseFlags, ...championFlagsToAdd];
 
     const data: PostFightData = {
       won,
       prize,
       xpReward,
+      fameGained,
+      defeatedTrainerId,
       source: battle.source,
       sourceId: battle.sourceId,
       title,
@@ -307,37 +365,105 @@ export function useBattleOrchestrator() {
       summary: cs.summary,
       lootDrops,
       materialDrops,
+      isTournamentMidBracket: isEventMidBracket && event?.retryablePerFight === false,
       nextSceneId: won ? battle.onWinSceneId : battle.onLossSceneId,
-      flagsToSet: won ? battle.onWinFlags : battle.onLossFlags,
-      cityToUnlock: won ? battle.unlockCityId : undefined,
+      flagsToSet: allFlags.length ? allFlags : undefined,
+      cityToUnlock: championCityToUnlock ?? (won ? battle.unlockCityId : undefined),
     };
 
     dispatch({ type: 'POSTFIGHT_SET', data });
-  }, [state.pendingBattle, dispatch]);
+  }, [state.pendingBattle, state.defeatedTrainerIds, dispatch]);
 
-  // ---- ack post fight → apply rewards and run any story scene ----
+  // ---- ack post fight → apply rewards and route ----
   const ackPostFight = useCallback(() => {
     const d = state.postFight;
     if (!d) return;
-    // we apply rewards by dispatching a series of small actions; this keeps
-    // them debuggable in dev tools and lets the reducer stay simple.
-    // (we add CONSUME_ITEM/GIVE_MATERIAL via separate actions to keep this clean —
-    // not needed yet, we handle these via dispatch chain in the next step)
-    // For now we directly compose a single REWARDS_APPLY action below in actions+reducer.
+    const battle = state.pendingBattle;
 
     // Set flags
     for (const f of d.flagsToSet ?? []) dispatch({ type: 'SET_FLAG', flag: f });
-    // Unlock city
     if (d.cityToUnlock) dispatch({ type: 'UNLOCK_CITY', cityId: d.cityToUnlock });
-    // Open next scene
     if (d.nextSceneId) dispatch({ type: 'OPEN_DIALOG', sceneId: d.nextSceneId });
 
-    // Apply XP / money / loot / materials
-    dispatch({ type: 'APPLY_REWARDS' });
+    // Identify the event if any
+    const event = battle?.eventId
+      ? (TOURNAMENTS[battle.eventId] ?? TIER_TESTS[battle.eventId])
+      : null;
+    const fightIdx = battle?.eventFightIndex ?? -1;
 
-    // route back to location
+    // ON WIN: bump event progress
+    if (d.won && event && fightIdx >= 0) {
+      dispatch({ type: 'EVENT_PROGRESS', eventId: event.id, fightIndex: fightIdx });
+    }
+
+    // ON FULL EVENT COMPLETION (champion): tier upgrade if specified, count the win
+    if (d.won && event && fightIdx === event.bracket.length - 1) {
+      dispatch({ type: 'CHAMPION_WIN', eventId: event.id });
+      if (event.championTierUpgrade) {
+        dispatch({ type: 'PROMOTE_TIER', tier: event.championTierUpgrade });
+      }
+    }
+
+    // Tournament auto-chain: if this is a non-retryable event with more fights, queue next
+    if (d.isTournamentMidBracket && event && event.retryablePerFight === false) {
+      dispatch({ type: 'APPLY_REWARDS' });
+      const nextIdx = fightIdx + 1;
+      const next = event.bracket[nextIdx];
+      const trainer = next.trainerId ? ALL_TRAINERS[next.trainerId] : null;
+      const nextBattle: PendingBattle = {
+        source: battle!.source,
+        sourceId: event.id,
+        oppLevel: next.oppLevel,
+        oppRank: 'competitor',
+        teamSize: next.teamSize ?? event.teamSize,
+        trainerId: next.trainerId,
+        forceModelId: trainer?.team[0]?.modelId,
+        forceFirstName: trainer?.firstName,
+        prize: next.prizeOnWin,
+        xpReward: next.xpOnWin,
+        fameReward: next.fameOnWin,
+        eventId: event.id,
+        eventFightIndex: nextIdx,
+      };
+      const teamIds = d.participants;
+      const mentorBonuses = calcMentorBonuses(state.crew);
+      const playerTeamRaw = teamIds
+        .map(id => state.bots.find(b => b.id === id))
+        .filter((b): b is Bot => Boolean(b));
+      const player = playerTeamRaw.map(b => makeCombatBot(b, mentorBonuses, 'player'));
+      const opp: CombatBot[] = [];
+      for (let i = 0; i < nextBattle.teamSize; i++) {
+        const oppBot = generateOpponent({
+          level: nextBattle.oppLevel,
+          rankId: nextBattle.oppRank,
+          forceModelId: i === 0 ? nextBattle.forceModelId : undefined,
+          forceFirstName: i === 0 ? nextBattle.forceFirstName : undefined,
+        });
+        opp.push(makeCombatBot(oppBot, { attack: 0, defense: 0, speed: 0 }, 'opp'));
+      }
+      const combat: CombatRuntime = {
+        player, opp,
+        battleRound: 1,
+        phase: 'player_select',
+        action: null, selectedBot: null, selectedAttack: null,
+        isSignature: false, selectedItem: null,
+        message: { text: `— FIGHT ${nextIdx + 1} —` },
+        summary: { dmgDealt: 0, dmgTaken: 0, hits: 0, crits: 0, sigsUsed: 0, statusDamage: 0 },
+        playerSelectedIds: teamIds,
+        source: battle!.source,
+        sourceId: event.id,
+      };
+      dispatch({ type: 'QUEUE_BATTLE', battle: nextBattle });
+      dispatch({ type: 'COMBAT_SET', combat });
+      return;
+    }
+
+    // Otherwise — apply rewards and route back.
+    // For retryable events (tier tests), return to the location screen so
+    // the player sees their updated event progress and can pick the next fight.
+    dispatch({ type: 'APPLY_REWARDS' });
     dispatch({ type: 'GO_SCENE', scene: 'location' });
-  }, [state.postFight, dispatch]);
+  }, [state.postFight, state.pendingBattle, state.bots, state.crew, dispatch]);
 
   return { startBattle, pickTarget, pickItem, defend, ackPostFight };
 }

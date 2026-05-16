@@ -29,7 +29,8 @@ export type SceneEffect =
   | { kind: 'giveCredits'; amount: number }
   | { kind: 'startBattle'; battleId: string }
   | { kind: 'goToScene'; sceneId: string }
-  | { kind: 'unlockCity'; cityId: string };
+  | { kind: 'unlockCity'; cityId: string }
+  | { kind: 'openNamingForModel'; modelId: string };
 
 export interface Scene {
   id: string;
@@ -81,13 +82,17 @@ export const STORY_SCENES: Record<string, Scene> = {
       { speaker: 'uncle', text: 'There you are. Sit down a minute.' },
       { speaker: 'uncle', text: 'Your mother told me you were thinking about the Operator track. I figured you would.' },
       { speaker: 'uncle', text: 'I made you something. Don\'t — don\'t make a face. Just look.' },
-      { speaker: 'narrator', text: 'Your uncle pulls a tarp off a frame in the corner. It\'s a fire-type, smaller than most. Hand-built. Your initials are carved into the chest plate.' },
-      { speaker: 'uncle', text: 'Her name is up to you. Frame designation\'s Hearthling — that\'s my joke, you don\'t have to keep it.' },
-      { speaker: 'uncle', text: 'Listen. The road out of town is right there. But I want you to remember something before you walk it.' },
-      { speaker: 'uncle', text: 'You don\'t train mechs. You train with them. They get one decade, same as us. Don\'t waste hers.' },
+      { speaker: 'narrator', text: 'Your uncle pulls a tarp off three frames in the corner. Each smaller than most. Hand-built. He spent a year on them.' },
+      { speaker: 'uncle', text: 'Three of them. I want you to pick. They each go a different way in a fight, and you should pick the one that feels right to you, not me.' },
+      { speaker: 'uncle', text: 'On the left — Hearthling. Fire core. Hits first, hits hard, breaks fast.' },
+      { speaker: 'uncle', text: 'In the middle — Tideling. Water core. Steady. Forgives mistakes.' },
+      { speaker: 'uncle', text: 'On the right — Sprouting. Bio frame. Half-grown, won\'t look like much. Heals herself off the damage she does.' },
+      { speaker: 'uncle', text: 'Take your time. Then we name her together.' },
     ],
-    effects: [
-      { kind: 'giveBot', modelId: 'hearthling' },
+    choices: [
+      { label: '◆ Hearthling — Fire',  effects: [{ kind: 'openNamingForModel', modelId: 'hearthling' }] },
+      { label: '◆ Tideling — Water',   effects: [{ kind: 'openNamingForModel', modelId: 'tideling' }] },
+      { label: '◆ Sprouting — Bio',    effects: [{ kind: 'openNamingForModel', modelId: 'sprouting' }] },
     ],
   },
 

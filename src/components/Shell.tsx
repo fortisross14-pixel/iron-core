@@ -26,6 +26,7 @@ export function Shell({ children, showHeader = true, showFooter = false, footer 
           <div style={brandStyle}>
             <span style={brandMarkStyle}>◆</span>
             <span style={brandTextStyle}>IRON&nbsp;CORE</span>
+            <span style={versionStyle}>v0.91</span>
           </div>
           <div style={headerStatsStyle}>
             {faction && (
@@ -76,7 +77,14 @@ const headerStyle: CSSProperties = {
   background: 'linear-gradient(180deg, rgba(255,107,53,0.08) 0%, transparent 100%)',
 };
 
-const brandStyle: CSSProperties = { display: 'flex', alignItems: 'center', gap: 8 };
+const brandStyle: CSSProperties = { display: 'flex', alignItems: 'baseline', gap: 8 };
+
+const versionStyle: CSSProperties = {
+  fontFamily: theme.font.mono,
+  fontSize: theme.size.micro,
+  color: theme.color.textDim,
+  letterSpacing: theme.letter.wide,
+};
 
 const brandMarkStyle: CSSProperties = {
   color: theme.color.accent,

@@ -20,7 +20,9 @@ export type Scene =
   | 'battleSetup'
   | 'assignItem'
   | 'stable'
-  | 'crew';
+  | 'crew'
+  | 'ranking'
+  | 'medals';
 
 export type DialogStackItem = {
   sceneId: string;
@@ -29,7 +31,7 @@ export type DialogStackItem = {
 
 export interface PendingBattle {
   // who the player is fighting and why
-  source: 'story' | 'junkyard' | 'tournament' | 'event';
+  source: 'story' | 'junkyard' | 'tournament' | 'event' | 'trainer';
   sourceId: string;          // story scene id, tournament id, etc.
   oppLevel: number;
   oppRank: string;
@@ -38,18 +40,31 @@ export interface PendingBattle {
   forceFirstName?: string;
   prize: number;
   xpReward: number;
-  // for tournaments, the round number; absent otherwise
-  tournamentRound?: number;
-  maxTournamentRound?: number;
+  fameReward?: number;       // fame paid on win, in addition to per-trainer fame
+  // who you're fighting (for trainer battles & fame attribution)
+  trainerId?: string;
+  // event context (for tier_test, tournament, gauntlet)
+  eventId?: string;
+  eventFightIndex?: number;    // 0-based
+  // for tournaments: array of fights to play through
+  tournamentBracket?: TournamentFight[];
   // story hooks
-  onWinSceneId?: string;     // play this scene on victory
-  onLossSceneId?: string;    // play this scene on loss
-  onWinFlags?: string[];     // set these flags on victory
-  onLossFlags?: string[];    // set these flags on loss
-  unlockCityId?: string;     // unlock on victory
+  onWinSceneId?: string;
+  onLossSceneId?: string;
+  onWinFlags?: string[];
+  onLossFlags?: string[];
+  unlockCityId?: string;
   // for junkyard
   isWild?: boolean;
   materialDropLevel?: number;
+}
+
+export interface TournamentFight {
+  trainerId?: string;
+  forceModelId?: string;
+  forceFirstName?: string;
+  oppLevel: number;
+  fameReward: number;
 }
 
 export interface CombatRuntime {
@@ -100,6 +115,8 @@ export interface PostFightData {
   won: boolean;
   prize: number;
   xpReward: number;
+  fameGained: number;
+  defeatedTrainerId?: string;
   source: PendingBattle['source'];
   sourceId: string;
   title: string;          // shown in result banner subtitle
@@ -108,6 +125,8 @@ export interface PostFightData {
   lootDrops: LootDrop[];
   materialDrops: { id: string; count: number }[];
   modelReward?: string;
+  // for multi-round tournaments
+  isTournamentMidBracket?: boolean;
   // story hooks to fire after the result is acknowledged
   nextSceneId?: string;
   flagsToSet?: string[];
@@ -120,6 +139,14 @@ export type LootDrop =
   | { kind: 'armor'; id: string }
   | { kind: 'disk'; id: string };
 
+export interface ActiveTournament {
+  tournamentId: string;
+  bracketIndex: number;          // next fight to run
+  teamBotIds: string[];          // team picked once for the whole bracket
+  fameAccumulated: number;
+  prizeAccumulated: number;
+}
+
 export interface GameState {
   scene: Scene;
   // dialog overlay (if active, renders on top of current scene)
@@ -129,6 +156,15 @@ export interface GameState {
   factionId: FactionId | null;
   // alignment moves with player actions on the (moral, posture) quadrant
   alignment: { moral: number; posture: number };
+
+  // career / ranking
+  fame: number;
+  playerTier: import('../data/trainers').TrainerTier;
+  defeatedTrainerIds: Set<string>;
+  /** Per-fight progress for multi-fight events. eventId → highest cleared fight index (zero-based). -1 means none cleared. */
+  eventProgress: Record<string, number>;
+  /** Number of times the player has fully won each tournament (champion). Used by the Medals tab. */
+  championWins: Record<string, number>;
 
   // bots
   bots: Bot[];
@@ -156,6 +192,8 @@ export interface GameState {
   battleSetupTeam: string[];               // selected bot ids
   combat: CombatRuntime | null;
   postFight: PostFightData | null;
+  // active tournament context (if running a bracket)
+  activeTournament: ActiveTournament | null;
   assignItemContext: { botId: string; category: 'weapon' | 'armor' | 'disk' | null } | null;
 
   // naming flow (after starter pick OR after store purchase)

@@ -7,6 +7,12 @@ export const initialState: GameState = {
   factionId: null,
   alignment: { moral: 0, posture: 0 },
 
+  fame: 0,
+  playerTier: 'amateur',
+  defeatedTrainerIds: new Set(),
+  eventProgress: {},
+  championWins: {},
+
   bots: [],
   crew: [],
 
@@ -29,6 +35,7 @@ export const initialState: GameState = {
   battleSetupTeam: [],
   combat: null,
   postFight: null,
+  activeTournament: null,
   assignItemContext: null,
 
   pendingNamingModelId: null,

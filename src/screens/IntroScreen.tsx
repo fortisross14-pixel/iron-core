@@ -17,13 +17,16 @@ export function IntroScreen() {
           Your uncle's workshop is downstairs.<br/>
           The road out of town is east.
         </div>
-        <Button full onClick={() => dispatch({ type: 'OPEN_DIALOG', sceneId: 'prologue_open' })}>
+        <Button full onClick={() => {
+          dispatch({ type: 'GO_SCENE', scene: 'town' });
+          dispatch({ type: 'OPEN_DIALOG', sceneId: 'prologue_open' });
+        }}>
           BEGIN →
         </Button>
         <Button full variant="ghost" onClick={() => dispatch({ type: 'GO_SCENE', scene: 'town' })} style={{ marginTop: 10 }}>
           SKIP PROLOGUE (DEV)
         </Button>
-        <div style={footnoteStyle}>v0.6 · MODULAR REWRITE</div>
+        <div style={footnoteStyle}>v0.91 · STEP 3B</div>
       </div>
     </div>
   );
