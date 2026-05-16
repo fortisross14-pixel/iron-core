@@ -100,6 +100,18 @@ export interface FactionHousePlace extends PlaceBase {
   factionId: FactionId;
   /** Coach ids for the fights this house offers (defined in /data/coaches.ts). */
   challengeCoachIds: string[];
+  /** Exclusive weapons sold here at a 15% discount (faction members only).
+   *  Weapon ids reference /data/weapons.ts. Available only to faction members. */
+  storeWeapons?: string[];
+  /** Faction grind spawn pool — only mechas of the faction's preferred types,
+   *  scaled to the city tier (Voltspire = uncommon+rare, Hollowmere = rare+epic).
+   *  Available only to faction members. */
+  grindPool?: { modelId: string; weight?: number; minLevel: number; maxLevel: number }[];
+  /** Tournament event ids hosted here (faction-only tournaments).
+   *  Winning grants president-eligibility flag. */
+  factionTournamentIds?: string[];
+  /** The faction president for this house. Defeated → unlock president status. */
+  presidentCoachId?: string;
 }
 
 // --- other

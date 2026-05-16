@@ -22,7 +22,9 @@ export type Scene =
   | 'stable'
   | 'crew'
   | 'ranking'
-  | 'medals';
+  | 'medals'
+  | 'learnMove'
+  | 'captureChoice';
 
 export type DialogStackItem = {
   sceneId: string;
@@ -54,8 +56,9 @@ export interface PendingBattle {
   onWinFlags?: string[];
   onLossFlags?: string[];
   unlockCityId?: string;
-  // for junkyard
+  // for junkyard / grind places
   isWild?: boolean;
+  wildModelId?: string;       // the actual model to spawn (capture target)
   materialDropLevel?: number;
 }
 
@@ -117,6 +120,11 @@ export interface PostFightData {
   xpReward: number;
   fameGained: number;
   defeatedTrainerId?: string;
+  /** Trainer fought regardless of outcome (sets encountered flag). */
+  encounteredTrainerId?: string;
+  /** Wild mecha captured (after victory in a grind fight). Triggers KEEP/SALVAGE prompt. */
+  wildModelId?: string;
+  wildLevel?: number;
   source: PendingBattle['source'];
   sourceId: string;
   title: string;          // shown in result banner subtitle
@@ -161,6 +169,8 @@ export interface GameState {
   fame: number;
   playerTier: import('../data/trainers').TrainerTier;
   defeatedTrainerIds: Set<string>;
+  /** Trainers the player has fought (won OR lost). Drives Ranking screen visibility. */
+  encounteredTrainerIds: Set<string>;
   /** Per-fight progress for multi-fight events. eventId → highest cleared fight index (zero-based). -1 means none cleared. */
   eventProgress: Record<string, number>;
   /** Number of times the player has fully won each tournament (champion). Used by the Medals tab. */
@@ -196,9 +206,18 @@ export interface GameState {
   activeTournament: ActiveTournament | null;
   assignItemContext: { botId: string; category: 'weapon' | 'armor' | 'disk' | null } | null;
 
-  // naming flow (after starter pick OR after store purchase)
+  // naming flow (after starter pick OR after capture)
   pendingNamingModelId: string | null;
   pendingNamingIsStarter: boolean;
+  pendingCaptureLevel?: number;  // level to spawn the captured bot at (defaults to 1)
+
+  // move-learn queue: when bots level up and learn new attacks, each prompt
+  // is queued here. The first item drives the LearnMoveScreen.
+  pendingMoveLearns: { botId: string; newAttackId: string }[];
+
+  // capture/salvage prompt after winning a grind fight against a wild mecha.
+  // null when no decision pending.
+  pendingCapture: { modelId: string; level: number } | null;
 
   // toast
   toast: string | null;

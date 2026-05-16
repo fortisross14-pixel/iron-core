@@ -147,9 +147,97 @@ export const TRAINERS_OFFICIAL: Record<string, Trainer> = {
 // COMBINED LOOKUP
 // ============================================================
 
+// ============================================================
+// FACTION PRESIDENTS (3) — boss-tier opponents
+// ============================================================
+//
+// To become president of your own faction:
+//   1. Collect all mechas + weapons of that faction's types (Faction LEADER)
+//   2. Beat the current president (a single fight at the faction house)
+//
+// Once you're president of your own faction, the inter-faction tournament
+// unlocks: three fights against the other three presidents (the ones not
+// belonging to your faction). Winning crowns you the dominant faction.
+
+export const TRAINERS_PRESIDENTS: Record<string, Trainer> = {
+  pres_naturesOwn: {
+    id: 'pres_naturesOwn',
+    firstName: 'Saren', surname: 'Greenwall',
+    tier: 'elite', fame: 18000,
+    homeCityId: 'voltspire',  // faction house host
+    flavor: "Nature's Own president. Walks barefoot in the grove year-round.",
+    team: [
+      { modelId: 'yggdra',       level: 28 },
+      { modelId: 'grovemother',  level: 27 },
+      { modelId: 'worldtree_jr', level: 26 },
+    ],
+  },
+  pres_elementalists: {
+    id: 'pres_elementalists',
+    firstName: 'Karro', surname: 'Maelstrom',
+    tier: 'elite', fame: 19000,
+    homeCityId: 'voltspire',
+    flavor: 'Elementalist president. Says less than she has fights for.',
+    team: [
+      { modelId: 'poseidon_mk1', level: 28 },
+      { modelId: 'ragnar_drake', level: 27 },
+      { modelId: 'fimbul_wolf',  level: 26 },
+    ],
+  },
+  pres_industrials: {
+    id: 'pres_industrials',
+    firstName: 'Garrick', surname: 'Steelvein',
+    tier: 'elite', fame: 20000,
+    homeCityId: 'voltspire',
+    flavor: 'Industrial president. Wears a pressed suit even in the foundries.',
+    team: [
+      { modelId: 'juggernaut_a', level: 28 },
+      { modelId: 'zeus_prime',   level: 27 },
+      { modelId: 'prime_mind',   level: 26 },
+    ],
+  },
+};
+
+// ============================================================
+// ULTIMATE TOURNAMENT — top 8 world fighters
+// ============================================================
+//
+// Unlocks after you become Inter-Faction Champion (beat the 3 other presidents).
+// Eight fights, escalating, leading to the world champion.
+// Placeholder names — all editable in this file.
+
+export const TRAINERS_ULTIMATE: Record<string, Trainer> = {
+  ult_1: { id: 'ult_1', firstName: 'Mira',  surname: 'Velmark',   tier: 'elite', fame: 22000, homeCityId: 'hollowmere',
+    flavor: '#8 in the world. Bottom of the world rank.',
+    team: [{ modelId: 'inferno_knight', level: 28 }, { modelId: 'storm_lancer', level: 28 }, { modelId: 'cryogon', level: 28 }] },
+  ult_2: { id: 'ult_2', firstName: 'Doss',  surname: 'Halren',    tier: 'elite', fame: 24000, homeCityId: 'hollowmere',
+    flavor: '#7. A relentless attacker.',
+    team: [{ modelId: 'kraken_minor', level: 29 }, { modelId: 'arc_titan', level: 29 }, { modelId: 'thunderbird', level: 29 }] },
+  ult_3: { id: 'ult_3', firstName: 'Yenna', surname: 'Sandhollow',tier: 'elite', fame: 26000, homeCityId: 'hollowmere',
+    flavor: '#6. Wins by attrition.',
+    team: [{ modelId: 'frost_titan', level: 29 }, { modelId: 'mountain_lord', level: 29 }, { modelId: 'leviathan_ii', level: 29 }] },
+  ult_4: { id: 'ult_4', firstName: 'Kev',   surname: 'Tarrow',    tier: 'elite', fame: 28000, homeCityId: 'hollowmere',
+    flavor: '#5. Fights like a thunderstorm.',
+    team: [{ modelId: 'helios_guard', level: 30 }, { modelId: 'bastion_xi', level: 30 }, { modelId: 'oracle_alpha', level: 30 }] },
+  ult_5: { id: 'ult_5', firstName: 'Roa',   surname: 'Stonelake', tier: 'elite', fame: 31000, homeCityId: 'hollowmere',
+    flavor: '#4. Was a faction president, twice.',
+    team: [{ modelId: 'golem_alpha', level: 30 }, { modelId: 'ironwolf', level: 30 }, { modelId: 'void_walker', level: 30 }] },
+  ult_6: { id: 'ult_6', firstName: 'Vivi',  surname: 'Crowmark',  tier: 'elite', fame: 34000, homeCityId: 'hollowmere',
+    flavor: '#3. Has never lost a televised match.',
+    team: [{ modelId: 'fimbul_wolf', level: 30 }, { modelId: 'ragnar_drake', level: 30 }, { modelId: 'yggdra', level: 30 }] },
+  ult_7: { id: 'ult_7', firstName: 'Halt',  surname: 'Brennick',  tier: 'elite', fame: 38000, homeCityId: 'hollowmere',
+    flavor: '#2. Quiet. Won the inter-faction once.',
+    team: [{ modelId: 'juggernaut_a', level: 30 }, { modelId: 'poseidon_mk1', level: 30 }, { modelId: 'zeus_prime', level: 30 }] },
+  ult_8: { id: 'ult_8', firstName: 'Atlas', surname: 'Vance',     tier: 'elite', fame: 50000, homeCityId: 'hollowmere',
+    flavor: '#1. The world champion. Has held the title 7 years.',
+    team: [{ modelId: 'alpha_omega', level: 30 }, { modelId: 'ironmind', level: 30 }, { modelId: 'worldfire', level: 30 }] },
+};
+
 export const ALL_TRAINERS: Record<string, Trainer> = {
   ...TRAINERS_AMATEUR,
   ...TRAINERS_OFFICIAL,
+  ...TRAINERS_PRESIDENTS,
+  ...TRAINERS_ULTIMATE,
 };
 
 export const TRAINER_LIST: Trainer[] = Object.values(ALL_TRAINERS);

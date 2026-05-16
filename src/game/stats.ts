@@ -14,11 +14,13 @@ export const getBotType = (bot: Bot): MechaType => {
   return MODELS[bot.modelId]?.type ?? 'steel';
 };
 
-/** Compute total stat bonus from crew mentors. */
+/** Compute total stat bonus from crew mentors.
+ *  Each crew member contributes a % bonus to the player's best stat at the time
+ *  of retirement: `bonus% = level * 0.5`. Multiple crew bots stack additively. */
 export function calcMentorBonuses(crew: CrewMember[]): { attack: number; defense: number; speed: number } {
   const b = { attack: 0, defense: 0, speed: 0 };
   for (const r of crew) {
-    const contribution = (r.finalPower ?? 50) / 10;
+    const contribution = r.level * 0.5;     // % bonus
     if (r.mentorSkill in b) {
       b[r.mentorSkill] += contribution;
     }
@@ -28,6 +30,18 @@ export function calcMentorBonuses(crew: CrewMember[]): { attack: number; defense
     defense: Math.round(b.defense * 10) / 10,
     speed:   Math.round(b.speed * 10) / 10,
   };
+}
+
+/** Determine which stat a bot is best at — used when it joins crew. */
+export function bestStatOf(bot: Pick<Bot, 'modelId' | 'statBoosts'>): StatTarget {
+  const m = MODELS[bot.modelId];
+  if (!m) return 'attack';
+  const a = m.baseStats.attack + bot.statBoosts.attack;
+  const d = m.baseStats.defense + bot.statBoosts.defense;
+  const s = m.baseStats.speed + bot.statBoosts.speed;
+  if (a >= d && a >= s) return 'attack';
+  if (d >= s) return 'defense';
+  return 'speed';
 }
 
 /** Calculate a bot's effective stats including all bonuses. */

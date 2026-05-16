@@ -69,3 +69,33 @@ input {
 
 .ic-fade-in { animation: ic-fade-in 0.3s ease; }
 .ic-slide-up { animation: ic-slide-up 0.4s ease; }
+
+@keyframes ic-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Cyberpunk-style scanline shimmer for active highlights */
+@keyframes ic-scan {
+  0%   { transform: translateY(-100%); opacity: 0.4; }
+  100% { transform: translateY(100%);  opacity: 0; }
+}
+
+/* Faint flicker for text glow */
+@keyframes ic-flicker {
+  0%, 100% { opacity: 1; }
+  92% { opacity: 1; }
+  93% { opacity: 0.7; }
+  94% { opacity: 1; }
+  96% { opacity: 0.85; }
+  97% { opacity: 1; }
+}
+
+/* Color/tint shift when traveling between cities */
+@keyframes ic-retint {
+  from { filter: hue-rotate(-15deg) brightness(0.8); }
+  to   { filter: hue-rotate(0deg) brightness(1); }
+}
+
+.ic-retint { animation: ic-retint 0.6s ease-out; }
+.ic-flicker { animation: ic-flicker 5s infinite; }

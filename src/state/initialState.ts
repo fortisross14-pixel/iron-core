@@ -10,6 +10,7 @@ export const initialState: GameState = {
   fame: 0,
   playerTier: 'amateur',
   defeatedTrainerIds: new Set(),
+  encounteredTrainerIds: new Set(),
   eventProgress: {},
   championWins: {},
 
@@ -40,6 +41,8 @@ export const initialState: GameState = {
 
   pendingNamingModelId: null,
   pendingNamingIsStarter: false,
+  pendingMoveLearns: [],
+  pendingCapture: null,
 
   toast: null,
   toastId: 0,

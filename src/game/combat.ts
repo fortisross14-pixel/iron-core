@@ -230,12 +230,23 @@ export function executeAttack(
 // Accessors used by combat UI
 // ============================================================
 
+/**
+ * Returns the bot's active 3 model attacks.
+ *
+ * Rule: if `learnedAttacks` is non-empty, it IS the full active set (we treat
+ * the move-management flow as authoritative). If empty, fall back to the
+ * model's defaultAttacks (initial state for new bots).
+ *
+ * The bot also gets its weapon's signature attack (handled separately by
+ * getSignatureAttack).
+ */
 export function getActiveAttacks(bot: Pick<Bot, 'modelId' | 'learnedAttacks'>): Attack[] {
   const model = MODELS[bot.modelId];
   if (!model) return [];
-  const all = [...model.defaultAttacks, ...(bot.learnedAttacks ?? [])];
-  const unique = [...new Set(all)];
-  return unique.map(id => ATTACKS[id]).filter(Boolean);
+  const ids = bot.learnedAttacks && bot.learnedAttacks.length > 0
+    ? bot.learnedAttacks
+    : model.defaultAttacks;
+  return ids.map(id => ATTACKS[id]).filter(Boolean);
 }
 
 export function getSignatureAttack(bot: Pick<Bot, 'weapon'>): Attack | null {

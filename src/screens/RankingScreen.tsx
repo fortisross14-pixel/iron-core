@@ -16,21 +16,23 @@
  * (Trainer challenge happens elsewhere — TBD in next step.)
  */
 
-import { CSSProperties } from 'react';
+import { CSSProperties, useState } from 'react';
 import { useGame } from '../state/GameStore';
 import { Shell } from '../components/Shell';
 import { Button } from '../components/Button';
 import { theme } from '../styles/theme';
+import { useCityPalette } from '../styles/cityPalette';
+import { BracketLabel, EdgeBand } from '../components/Frame';
 import { buildRankings } from '../game/fame';
 import { TIER_ORDER, TIER_LABEL, TIER_COLOR } from '../game/tier';
 import { tierIndex, canChallengeTrainer } from '../game/tier';
 import { MODELS } from '../data/models';
 import type { TrainerTier, Trainer } from '../data/trainers';
 import type { PendingBattle } from '../state/types';
-import { useState } from 'react';
 
 export function RankingScreen() {
   const { state, dispatch } = useGame();
+  const palette = useCityPalette();
   const [viewTier, setViewTier] = useState<TrainerTier>(state.playerTier);
   const [challenging, setChallenging] = useState<Trainer | null>(null);
   const playerTierIdx = tierIndex(state.playerTier);
@@ -58,21 +60,34 @@ export function RankingScreen() {
   };
 
   return (
-    <Shell>
-      <button onClick={() => dispatch({ type: 'GO_SCENE', scene: 'town' })} style={backStyle}>← BACK</button>
+    <Shell pageLabel="RANKING">
+      <button onClick={() => dispatch({ type: 'GO_SCENE', scene: 'town' })}
+        style={{ background: 'transparent', border: 'none', color: palette.c3, fontFamily: theme.font.mono, fontSize: theme.size.tiny, letterSpacing: theme.letter.wide, cursor: 'pointer', padding: 0, marginBottom: theme.space.md }}>
+        ← BACK
+      </button>
 
-      <div style={titleStyle}>MECHA TRAINER RANKING</div>
+      <div style={{ marginBottom: theme.space.xs }}>
+        <BracketLabel>WORLD LEADERBOARD</BracketLabel>
+      </div>
+      <div style={{ fontFamily: theme.font.display, fontSize: theme.size.h1, letterSpacing: theme.letter.wider, color: '#fff', marginBottom: 6, textShadow: `0 0 14px ${palette.c1}60` }}>
+        TRAINER RANKING
+      </div>
+      <EdgeBand color={palette.c1} />
 
-      <div style={youCardStyle}>
+      <div style={{ ...youCardStyle, marginTop: theme.space.md, background: `linear-gradient(180deg, ${palette.c5}c0 0%, ${theme.color.bgRaised} 80%)`, border: `1px solid ${palette.c1}`, position: 'relative', boxShadow: `0 0 16px ${palette.c1}30` }}>
+        <span style={{ position: 'absolute', top: -1, left: -1, width: 10, height: 10, borderTop: `2px solid ${palette.c1}`, borderLeft: `2px solid ${palette.c1}`, pointerEvents: 'none' }} />
+        <span style={{ position: 'absolute', top: -1, right: -1, width: 10, height: 10, borderTop: `2px solid ${palette.c1}`, borderRight: `2px solid ${palette.c1}`, pointerEvents: 'none' }} />
+        <span style={{ position: 'absolute', bottom: -1, left: -1, width: 10, height: 10, borderBottom: `2px solid ${palette.c1}`, borderLeft: `2px solid ${palette.c1}`, pointerEvents: 'none' }} />
+        <span style={{ position: 'absolute', bottom: -1, right: -1, width: 10, height: 10, borderBottom: `2px solid ${palette.c1}`, borderRight: `2px solid ${palette.c1}`, pointerEvents: 'none' }} />
         <div style={youHeadStyle}>
-          <span style={youLabelStyle}>YOU</span>
+          <span style={{ ...youLabelStyle, color: palette.c1 }}>YOU</span>
           <span style={{ ...tierBadgeStyle, color: TIER_COLOR[state.playerTier], borderColor: TIER_COLOR[state.playerTier] }}>
             {TIER_LABEL[state.playerTier]}
           </span>
         </div>
         <div style={youStatsStyle}>
-          <div><span style={statLblStyle}>FAME</span> <span style={statValStyle}>{state.fame}</span></div>
-          <div><span style={statLblStyle}>DEFEATED</span> <span style={statValStyle}>{state.defeatedTrainerIds.size}</span></div>
+          <div><span style={statLblStyle}>FAME</span> <span style={{ ...statValStyle, color: palette.c2 }}>{state.fame}</span></div>
+          <div><span style={statLblStyle}>DEFEATED</span> <span style={{ ...statValStyle, color: palette.c2 }}>{state.defeatedTrainerIds.size}</span></div>
         </div>
       </div>
 
@@ -98,7 +113,7 @@ export function RankingScreen() {
         })}
       </div>
 
-      <div style={hintStyle}>Tap a trainer to challenge them.</div>
+      <div style={hintStyle}>Tap an encountered trainer to challenge them. (XP only — no fame.)</div>
 
       {/* RANKING LIST */}
       <div style={listStyle}>
@@ -115,7 +130,8 @@ export function RankingScreen() {
             );
           } else {
             const t = e.trainer;
-            const canFight = canChallengeTrainer(state.playerTier, t.tier);
+            const encountered = state.encounteredTrainerIds.has(t.id);
+            const canFight = encountered && canChallengeTrainer(state.playerTier, t.tier);
             return (
               <button key={t.id}
                 onClick={() => canFight && state.bots.length > 0 && setChallenging(t)}
@@ -128,13 +144,15 @@ export function RankingScreen() {
                 <div style={rankColStyle}>#{e.rank}</div>
                 <div style={nameColStyle}>
                   <div style={nameTextStyle}>
-                    {t.firstName} {t.surname}
+                    {encountered ? `${t.firstName} ${t.surname}` : '??? ???'}
                     {e.defeated && <span style={defeatedBadgeStyle}>✓</span>}
-                    {!canFight && <span style={lockedBadgeStyle}>🔒</span>}
+                    {encountered && !canFight && <span style={lockedBadgeStyle}>🔒</span>}
                   </div>
-                  <div style={flavorStyle}>{t.flavor}</div>
+                  <div style={flavorStyle}>
+                    {encountered ? t.flavor : 'Not yet encountered.'}
+                  </div>
                 </div>
-                <div style={fameColStyle}>{t.fame}</div>
+                <div style={fameColStyle}>{encountered ? t.fame : '???'}</div>
               </button>
             );
           }
@@ -156,9 +174,6 @@ export function RankingScreen() {
 function ChallengeModal({ trainer, onConfirm, onCancel, alreadyDefeated }: {
   trainer: Trainer; onConfirm: () => void; onCancel: () => void; alreadyDefeated: boolean;
 }) {
-  // Estimate fame reward shown in the modal — matches /game/fame.ts formula
-  const fameReward = alreadyDefeated ? 1 : Math.max(1, Math.round(trainer.fame * 0.10 + 5));
-
   return (
     <div style={modalOverlayStyle} onClick={onCancel}>
       <div style={modalStyle} onClick={e => e.stopPropagation()}>
@@ -180,8 +195,8 @@ function ChallengeModal({ trainer, onConfirm, onCancel, alreadyDefeated }: {
           })}
         </div>
         <div style={modalRewardStyle}>
-          On win: <span style={{ color: theme.color.accent }}>+{fameReward} fame</span>
-          {alreadyDefeated && <span style={{ color: theme.color.textDim }}> (repeat win)</span>}
+          Practice match — <span style={{ color: theme.color.accent }}>XP only</span>, no fame.
+          {alreadyDefeated && <span style={{ color: theme.color.textDim }}> Already defeated.</span>}
         </div>
         <div style={modalButtonsStyle}>
           <Button variant="secondary" small full onClick={onCancel}>CANCEL</Button>

@@ -100,6 +100,71 @@ export const TOURNAMENTS: Record<string, MultiFightEvent> = {
     retryablePerFight: false,
     reEnterable: true,
   },
+
+  // ============================================================
+  // INTER-FACTION TOURNAMENT
+  // ============================================================
+  // Unlocks once the player has become president of their own faction
+  // (flag: 'faction_president'). Fights the other three faction presidents.
+  // Winning unlocks the Ultimate Tournament.
+  inter_faction: {
+    id: 'inter_faction',
+    kind: 'tournament',
+    tier: 'elite',
+    name: 'Inter-Faction Championship',
+    hostLocationId: 'holl_officials',  // hosted at Hollowmere officials' hall for now
+    desc: 'Three fights against the presidents of the other three factions. Win to claim your faction as the dominant force.',
+    flavor: 'The arena floor is sand. The crowds are bigger than any tournament you have seen.',
+    entry: 5000,
+    teamSize: 3,
+    requires: { storyFlags: ['faction_president'] },
+    championFameBonus: 500,
+    championPrizeBonus: 25000,
+    championFlag: 'inter_faction_won',
+    bracket: [
+      // The actual trainer ids will be filtered at runtime to exclude the player's
+      // own faction president. For now we list all three; the screen logic will
+      // skip the one belonging to the player's faction.
+      { trainerId: 'pres_naturesOwn',    oppLevel: 28, fameOnWin: 80,  prizeOnWin: 4000, xpOnWin: 400, subtitle: "Nature's Own President" },
+      { trainerId: 'pres_elementalists', oppLevel: 28, fameOnWin: 100, prizeOnWin: 5000, xpOnWin: 450, subtitle: "Elementalist President" },
+      { trainerId: 'pres_industrials',   oppLevel: 28, fameOnWin: 120, prizeOnWin: 6000, xpOnWin: 500, subtitle: 'Industrial President' },
+    ],
+    retryablePerFight: false,
+    reEnterable: false,
+  },
+
+  // ============================================================
+  // ULTIMATE TOURNAMENT — world champion bracket
+  // ============================================================
+  // Unlocks after winning the Inter-Faction Championship.
+  // Eight escalating fights against the top 8 world fighters.
+  ultimate: {
+    id: 'ultimate',
+    kind: 'tournament',
+    tier: 'elite',
+    name: 'Ultimate Tournament',
+    hostLocationId: 'holl_officials',
+    desc: 'The world rank, top to bottom. Eight fights. The final is against the reigning champion.',
+    flavor: 'Once a year. Broadcast everywhere. Only one trainer leaves with the title.',
+    entry: 10000,
+    teamSize: 3,
+    requires: { storyFlags: ['inter_faction_won'] },
+    championFameBonus: 5000,
+    championPrizeBonus: 200000,
+    championFlag: 'world_champion',
+    bracket: [
+      { trainerId: 'ult_1', oppLevel: 28, fameOnWin: 100, prizeOnWin: 3000,  xpOnWin: 400, subtitle: '#8 World Rank' },
+      { trainerId: 'ult_2', oppLevel: 29, fameOnWin: 150, prizeOnWin: 4000,  xpOnWin: 420, subtitle: '#7 World Rank' },
+      { trainerId: 'ult_3', oppLevel: 29, fameOnWin: 200, prizeOnWin: 5000,  xpOnWin: 440, subtitle: '#6 World Rank' },
+      { trainerId: 'ult_4', oppLevel: 30, fameOnWin: 280, prizeOnWin: 6500,  xpOnWin: 460, subtitle: '#5 World Rank' },
+      { trainerId: 'ult_5', oppLevel: 30, fameOnWin: 360, prizeOnWin: 8000,  xpOnWin: 480, subtitle: '#4 World Rank' },
+      { trainerId: 'ult_6', oppLevel: 30, fameOnWin: 480, prizeOnWin: 10000, xpOnWin: 500, subtitle: '#3 World Rank' },
+      { trainerId: 'ult_7', oppLevel: 30, fameOnWin: 640, prizeOnWin: 13000, xpOnWin: 520, subtitle: '#2 World Rank' },
+      { trainerId: 'ult_8', oppLevel: 30, fameOnWin: 1000, prizeOnWin: 20000, xpOnWin: 600, subtitle: '#1 World Rank · CHAMPION' },
+    ],
+    retryablePerFight: false,
+    reEnterable: false,
+  },
 };
 
 export const TOURNAMENT_LIST = Object.values(TOURNAMENTS);

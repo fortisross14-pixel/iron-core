@@ -59,7 +59,7 @@ export type Action =
   | { type: 'ASSIGN_INSTALL_DISK'; botId: string; diskId: string }
   | { type: 'ASSIGN_CLOSE' }
   // ---- market ----
-  | { type: 'BUY_WEAPON'; weaponId: string }
+  | { type: 'BUY_WEAPON'; weaponId: string; price?: number }
   | { type: 'BUY_ARMOR'; armorId: string }
   | { type: 'BUY_DISK'; diskId: string }
   | { type: 'BUY_ITEM'; itemId: string }
@@ -80,4 +80,11 @@ export type Action =
   // ---- events / tier progression ----
   | { type: 'EVENT_PROGRESS'; eventId: string; fightIndex: number }
   | { type: 'CHAMPION_WIN'; eventId: string }
-  | { type: 'PROMOTE_TIER'; tier: import('../data/trainers').TrainerTier };
+  | { type: 'PROMOTE_TIER'; tier: import('../data/trainers').TrainerTier }
+  // ---- move learning ----
+  | { type: 'MOVE_LEARN_RESOLVE'; replaceAttackId: string | null }
+  // ---- capture / salvage ----
+  | { type: 'CAPTURE_KEEP' }
+  | { type: 'CAPTURE_SALVAGE' }
+  // ---- crew management ----
+  | { type: 'PROMOTE_TO_CREW'; botId: string };

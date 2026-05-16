@@ -21,6 +21,8 @@ import { CSSProperties } from 'react';
 import { useGame } from '../state/GameStore';
 import { Shell } from '../components/Shell';
 import { theme } from '../styles/theme';
+import { useCityPalette } from '../styles/cityPalette';
+import { BracketLabel, EdgeBand } from '../components/Frame';
 import { TOURNAMENTS } from '../data/tournaments';
 import { CITIES } from '../data/cities';
 import { getPlace } from '../data/places';
@@ -37,15 +39,14 @@ const TIER_COLOR: Record<TrainerTier, string> = {
 
 export function MedalsScreen() {
   const { state, dispatch } = useGame();
+  const palette = useCityPalette();
 
-  // Filter to tournaments the player has at least entered or won
   const visited = Object.values(TOURNAMENTS).filter(t => {
     const entered = (state.eventProgress[t.id] ?? -1) >= 0;
     const won = (state.championWins[t.id] ?? 0) > 0;
     return entered || won;
   });
 
-  // Group by tier
   const grouped: Record<TrainerTier, MultiFightEvent[]> = {
     amateur: [], official: [], professional: [], elite: [],
   };
@@ -54,15 +55,28 @@ export function MedalsScreen() {
   const totalWins = Object.values(state.championWins).reduce((a, b) => a + b, 0);
 
   return (
-    <Shell>
-      <button onClick={() => dispatch({ type: 'GO_SCENE', scene: 'town' })} style={backStyle}>← BACK</button>
+    <Shell pageLabel="MEDALS">
+      <button onClick={() => dispatch({ type: 'GO_SCENE', scene: 'town' })}
+        style={{ background: 'transparent', border: 'none', color: palette.c3, fontFamily: theme.font.mono, fontSize: theme.size.tiny, letterSpacing: theme.letter.wide, cursor: 'pointer', padding: 0, marginBottom: theme.space.md }}>
+        ← BACK
+      </button>
 
-      <div style={titleStyle}>TROPHY CABINET</div>
+      <div style={{ marginBottom: theme.space.xs }}>
+        <BracketLabel>HALL OF RECORDS</BracketLabel>
+      </div>
+      <div style={{ fontFamily: theme.font.display, fontSize: theme.size.h1, letterSpacing: theme.letter.wider, color: '#fff', marginBottom: 6, textShadow: `0 0 14px ${palette.c1}60` }}>
+        TROPHY CABINET
+      </div>
+      <EdgeBand color={palette.c1} />
 
-      <div style={summaryStyle}>
-        <div><span style={statLblStyle}>TOTAL WINS</span><span style={statValStyle}>{totalWins}</span></div>
-        <div><span style={statLblStyle}>UNIQUE</span><span style={statValStyle}>{Object.keys(state.championWins).length}</span></div>
-        <div><span style={statLblStyle}>ENTERED</span><span style={statValStyle}>{visited.length}</span></div>
+      <div style={{ ...summaryStyle, marginTop: theme.space.md, background: `linear-gradient(180deg, ${palette.c5}c0 0%, ${theme.color.bgRaised} 80%)`, border: `1px solid ${palette.c1}80`, position: 'relative' }}>
+        <span style={{ position: 'absolute', top: -1, left: -1, width: 8, height: 8, borderTop: `2px solid ${palette.c1}`, borderLeft: `2px solid ${palette.c1}`, pointerEvents: 'none' }} />
+        <span style={{ position: 'absolute', top: -1, right: -1, width: 8, height: 8, borderTop: `2px solid ${palette.c1}`, borderRight: `2px solid ${palette.c1}`, pointerEvents: 'none' }} />
+        <span style={{ position: 'absolute', bottom: -1, left: -1, width: 8, height: 8, borderBottom: `2px solid ${palette.c1}`, borderLeft: `2px solid ${palette.c1}`, pointerEvents: 'none' }} />
+        <span style={{ position: 'absolute', bottom: -1, right: -1, width: 8, height: 8, borderBottom: `2px solid ${palette.c1}`, borderRight: `2px solid ${palette.c1}`, pointerEvents: 'none' }} />
+        <div><span style={{ ...statLblStyle, color: palette.c4 }}>TOTAL WINS</span><span style={{ ...statValStyle, color: palette.c2 }}>{totalWins}</span></div>
+        <div><span style={{ ...statLblStyle, color: palette.c4 }}>UNIQUE</span><span style={{ ...statValStyle, color: palette.c2 }}>{Object.keys(state.championWins).length}</span></div>
+        <div><span style={{ ...statLblStyle, color: palette.c4 }}>ENTERED</span><span style={{ ...statValStyle, color: palette.c2 }}>{visited.length}</span></div>
       </div>
 
       {visited.length === 0 && (
@@ -84,14 +98,25 @@ export function MedalsScreen() {
                 (getPlace(t.hostLocationId)?.cityId) ?? ''
               ]?.name ?? 'Unknown';
               const placeName = getPlace(t.hostLocationId)?.name ?? '';
+              // Faction-flavored medals get a faction-color highlight
+              const factionColor = t.id === 'inter_faction' && state.factionId
+                ? theme.factionColor[state.factionId]
+                : null;
+              const isFaction = !!factionColor;
               return (
                 <div key={t.id} style={{
                   ...trophyRowStyle,
                   ...(isChamp ? championRowStyle : {}),
+                  ...(isFaction ? { borderColor: factionColor!, background: `linear-gradient(90deg, ${factionColor}15 0%, ${theme.color.bgRaised} 70%)` } : {}),
                 }}>
-                  <div style={medalIconStyle}>{isChamp ? '✦' : '◌'}</div>
+                  <div style={{ ...medalIconStyle, color: isFaction ? factionColor! : isChamp ? theme.color.gold : theme.color.textDim }}>
+                    {isChamp ? '✦' : '◌'}
+                  </div>
                   <div style={trophyBodyStyle}>
-                    <div style={trophyNameStyle}>{t.name}</div>
+                    <div style={trophyNameStyle}>
+                      {t.name}
+                      {isFaction && <span style={{ ...factionTagStyle, color: factionColor!, borderColor: factionColor! }}>FACTION</span>}
+                    </div>
                     <div style={trophyHostStyle}>{placeName} · {cityName}</div>
                   </div>
                   <div style={winCountStyle}>
@@ -227,4 +252,13 @@ const enteredLabelStyle: CSSProperties = {
   fontSize: theme.size.micro,
   color: theme.color.textDim,
   letterSpacing: theme.letter.wide,
+};
+
+const factionTagStyle: CSSProperties = {
+  fontFamily: theme.font.mono,
+  fontSize: theme.size.micro,
+  letterSpacing: theme.letter.wide,
+  padding: '1px 5px',
+  border: '1px solid',
+  marginLeft: 6,
 };

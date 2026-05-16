@@ -3,6 +3,8 @@ import { useGame } from '../state/GameStore';
 import { useBattleOrchestrator } from '../hooks/useBattleOrchestrator';
 import { PartyBotMini } from '../components/PartyBotMini';
 import { theme } from '../styles/theme';
+import { useCityPalette } from '../styles/cityPalette';
+import { BracketLabel } from '../components/Frame';
 import { ATTACKS } from '../data/attacks';
 import { ITEMS } from '../data/items';
 import { TYPE_INFO } from '../data/types';
@@ -10,12 +12,30 @@ import { getActiveAttacks, getSignatureAttack } from '../game/combat';
 
 export function CombatScreen() {
   const { state, dispatch } = useGame();
+  const palette = useCityPalette();
   const { pickTarget, pickItem, defend } = useBattleOrchestrator();
   const cs = state.combat;
   if (!cs) return null;
 
   const playerActable = cs.player.filter(b => b.hp > 0 && !b.actedThisRound);
   const currentBot = cs.selectedBot ? cs.player.find(b => b.id === cs.selectedBot) ?? null : null;
+
+  const appStyleDyn: CSSProperties = {
+    ...appStyle,
+    background: `
+      radial-gradient(ellipse at top, ${palette.c5}80 0%, ${theme.color.bg} 60%, #000 100%)
+    `,
+  };
+  const headerStyleDyn: CSSProperties = {
+    ...headerStyle,
+    borderBottom: `1px solid ${palette.c1}80`,
+    background: `linear-gradient(180deg, ${palette.c5}80 0%, ${theme.color.bgRaised} 100%)`,
+  };
+  const turnStyleDyn: CSSProperties = {
+    ...turnStyle,
+    color: palette.c1,
+    textShadow: `0 0 8px ${palette.c1}80`,
+  };
 
   const messageColor = (() => {
     if (!cs.message?.emphasis) return theme.color.text;
@@ -28,13 +48,13 @@ export function CombatScreen() {
   })();
 
   return (
-    <div style={appStyle}>
-      <header style={headerStyle}>
+    <div style={appStyleDyn}>
+      <header style={headerStyleDyn}>
         <div style={titleStyle}>
           ROUND {cs.battleRound}
           {cs.maxTournamentRound && cs.maxTournamentRound > 1 && ` · R${cs.tournamentRound}/${cs.maxTournamentRound}`}
         </div>
-        <div style={turnStyle}>
+        <div style={turnStyleDyn}>
           {cs.phase === 'enemy_turn' ? 'OPPONENT TURN' :
            cs.phase === 'player_select' ? `${playerActable.length} TO ACT` :
            cs.phase === 'bot_choose' ? 'PICK BOT' :
@@ -176,9 +196,12 @@ function AttackPicker({ bot, battleRound }: { bot: import('../game/combat').Comb
   const sigOk = sig && battleRound >= 3 && bot.signatureUsesLeft > 0;
   return (
     <div style={subMenuStyle}>
-      <button style={backBtnStyle} onClick={() => dispatch({ type: 'COMBAT_BACK', toPhase: 'bot_choose' })}>
+      <button style={backBtnStyle} onClick={() => dispatch({ type: 'COMBAT_BACK', toPhase: 'player_select' })}>
         ← BACK
       </button>
+      <div style={actingStyle}>
+        ACTING: <span style={{ color: theme.color.accent }}>{bot.firstName}</span>
+      </div>
       <div style={attackListStyle}>
         {attacks.map(a => (
           <button key={a.id} style={attackOptionStyle} onClick={() => dispatch({ type: 'COMBAT_PICK_ATTACK', attackId: a.id, isSignature: false })}>
@@ -367,6 +390,17 @@ const promptStyle: CSSProperties = {
   fontSize: theme.size.small,
   textAlign: 'center',
   letterSpacing: theme.letter.normal,
+};
+
+const actingStyle: CSSProperties = {
+  padding: 8,
+  background: theme.color.bgRaised,
+  borderTop: `2px solid ${theme.color.accent}`,
+  fontFamily: theme.font.mono,
+  fontSize: theme.size.tiny,
+  color: theme.color.textMuted,
+  letterSpacing: theme.letter.wide,
+  textAlign: 'center',
 };
 
 const attackListStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 4 };

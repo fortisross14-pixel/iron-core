@@ -10,7 +10,9 @@ import { MATERIALS } from '../data/materials';
 import { MODELS } from '../data/models';
 import { STORY_SCENES } from '../data/story';
 import { LOCATIONS } from '../data/locations';
-import { getDiskCapacity, getBotType } from '../game/stats';
+import { getDiskCapacity, getBotType, bestStatOf } from '../game/stats';
+import type { CrewMember } from '../game/types';
+import { getCurrentStats } from '../game/combat';
 
 /**
  * Reducer is pure. Side effects (timers, async combat ticks) are orchestrated
@@ -39,7 +41,11 @@ export function reducer(state: GameState, action: Action): GameState {
 
     case 'CONFIRM_NAMING': {
       if (!state.pendingNamingModelId) return state;
-      const bot = createBot(state.pendingNamingModelId, action.firstName, 1);
+      // Capture-and-keep should respect the bot's actual current level, not always 1
+      // (wild bots come from a grind place at a level set by the spawn pool).
+      // For starter bots, level 1 is correct.
+      const level = state.pendingNamingIsStarter ? 1 : (state.pendingCaptureLevel ?? 1);
+      const bot = createBot(state.pendingNamingModelId, action.firstName, level);
       if (!bot) return state;
       const discovered = new Set(state.discovered);
       discovered.add(bot.modelId);
@@ -49,7 +55,8 @@ export function reducer(state: GameState, action: Action): GameState {
         discovered,
         pendingNamingModelId: null,
         pendingNamingIsStarter: false,
-        scene: state.pendingNamingIsStarter ? 'town' : state.scene,
+        pendingCaptureLevel: undefined,
+        scene: state.pendingNamingIsStarter ? 'town' : 'location',
       };
     }
 
@@ -185,8 +192,30 @@ export function reducer(state: GameState, action: Action): GameState {
       if (!state.combat) return state;
       return { ...state, combat: { ...state.combat, phase: action.phase } };
 
-    case 'COMBAT_PICK_ACTION':
+    case 'COMBAT_PICK_ACTION': {
       if (!state.combat) return state;
+      // For ATTACK, auto-pick the next bot to act: highest speed among alive
+      // un-acted player bots; ties broken by roster order (first wins).
+      if (action.action === 'attack') {
+        const candidates = state.combat.player.filter(b => b.hp > 0 && !b.actedThisRound);
+        // Sort by speed DESC, preserving original order on ties (stable sort)
+        const ranked = candidates
+          .map((b, idx) => ({ b, idx, speed: getCurrentStats(b).speed }))
+          .sort((a, c) => c.speed - a.speed || a.idx - c.idx);
+        const pick = ranked[0]?.b;
+        if (!pick) return state;
+        return {
+          ...state,
+          combat: {
+            ...state.combat,
+            action: 'attack',
+            phase: 'attack_choose',
+            selectedBot: pick.id,
+            selectedAttack: null,
+          },
+        };
+      }
+      // ITEM and DEFEND still let the player pick which bot
       return {
         ...state,
         combat: {
@@ -197,6 +226,7 @@ export function reducer(state: GameState, action: Action): GameState {
           selectedAttack: null,
         },
       };
+    }
 
     case 'COMBAT_PICK_BOT':
       if (!state.combat) return state;
@@ -374,10 +404,12 @@ export function reducer(state: GameState, action: Action): GameState {
     // -------- market --------
     case 'BUY_WEAPON': {
       const w = WEAPONS[action.weaponId];
-      if (!w || state.money < w.price) return state;
+      if (!w) return state;
+      const price = action.price ?? w.price;
+      if (state.money < price) return state;
       return {
         ...state,
-        money: state.money - w.price,
+        money: state.money - price,
         weaponInv: { ...state.weaponInv, [action.weaponId]: (state.weaponInv[action.weaponId] ?? 0) + 1 },
         toast: `Acquired ${w.name}.`,
         toastId: state.toastId + 1,
@@ -528,6 +560,100 @@ export function reducer(state: GameState, action: Action): GameState {
     case 'PROMOTE_TIER': {
       return { ...state, playerTier: action.tier };
     }
+    case 'MOVE_LEARN_RESOLVE': {
+      const queue = state.pendingMoveLearns;
+      if (queue.length === 0) return state;
+      const head = queue[0];
+      const rest = queue.slice(1);
+      const bots = state.bots.map(b => {
+        if (b.id !== head.botId) return b;
+        // null = skip the new move entirely
+        if (action.replaceAttackId === null) return b;
+        const model = MODELS[b.modelId];
+        if (!model) return b;
+        // Seed learnedAttacks from defaults if it's still empty
+        let learned = b.learnedAttacks.length > 0
+          ? [...b.learnedAttacks]
+          : [...model.defaultAttacks];
+        // If room (less than 3 model moves), just append the new one and
+        // ignore replaceAttackId.
+        if (learned.length < 3) {
+          if (!learned.includes(head.newAttackId)) learned.push(head.newAttackId);
+        } else {
+          // Replace the specified attack
+          const idx = learned.indexOf(action.replaceAttackId);
+          if (idx >= 0) {
+            learned[idx] = head.newAttackId;
+          }
+        }
+        return { ...b, learnedAttacks: learned };
+      });
+      return { ...state, bots, pendingMoveLearns: rest };
+    }
+
+    // -------- capture / salvage --------
+    case 'CAPTURE_KEEP': {
+      if (!state.pendingCapture) return state;
+      return {
+        ...state,
+        pendingNamingModelId: state.pendingCapture.modelId,
+        pendingNamingIsStarter: false,
+        pendingCaptureLevel: state.pendingCapture.level,
+        pendingCapture: null,
+        scene: 'naming',
+      };
+    }
+    case 'CAPTURE_SALVAGE': {
+      if (!state.pendingCapture) return state;
+      const materials = { ...state.materials };
+      const matKeys = Object.keys(materials).length > 0
+        ? Object.keys(materials)
+        : ['scrap_metal', 'copper_wire', 'salvaged_plate'];
+      const bonusCount = 2 + Math.floor(Math.random() * 2);
+      for (let i = 0; i < bonusCount; i++) {
+        const mat = matKeys[Math.floor(Math.random() * matKeys.length)];
+        materials[mat] = (materials[mat] ?? 0) + 1;
+      }
+      return {
+        ...state,
+        materials,
+        pendingCapture: null,
+        scene: 'location',
+        toast: 'Salvaged for parts.',
+        toastId: state.toastId + 1,
+      };
+    }
+
+    case 'PROMOTE_TO_CREW': {
+      const bot = state.bots.find(b => b.id === action.botId);
+      if (!bot) return state;
+      // Recover weapon, armor, disks to inventory; items aren't equipped per-bot.
+      const weaponInv = { ...state.weaponInv };
+      if (bot.weapon) weaponInv[bot.weapon] = (weaponInv[bot.weapon] ?? 0) + 1;
+      const armorInv = { ...state.armorInv };
+      if (bot.armor) armorInv[bot.armor] = (armorInv[bot.armor] ?? 0) + 1;
+      // Disks: we don't track which specific disks a bot has used; only the disksUsed count.
+      // For now we don't refund disks (they're stat-permanent anyway via statBoosts).
+      // Determine mentor skill from best base stat
+      const skill = bestStatOf(bot);
+      const crewMember: CrewMember = {
+        ...bot,
+        weapon: null,
+        armor: null,
+        finalPower: 50,    // legacy field; not used in new bonus formula
+        mentorSkill: skill,
+        retiredAt: Date.now(),
+      };
+      return {
+        ...state,
+        bots: state.bots.filter(b => b.id !== bot.id),
+        crew: [...state.crew, crewMember],
+        weaponInv,
+        armorInv,
+        toast: `${bot.firstName} joined the crew · +${(bot.level * 0.5).toFixed(1)}% ${skill.toUpperCase()}`,
+        toastId: state.toastId + 1,
+      };
+    }
 
     // -------- combat side effects --------
     case 'CONSUME_ITEM': {
@@ -542,14 +668,32 @@ export function reducer(state: GameState, action: Action): GameState {
       const d = state.postFight;
       if (!d) return state;
       // money + xp + materials + loot, applied to participants
+      const newMoveLearns: { botId: string; newAttackId: string }[] = [];
       const bots = state.bots.map(b => {
         const participated = d.participants.includes(b.id);
         if (!participated) return b;
         let u = { ...b };
-        // XP
-        u.xp += d.xpReward;
-        while (u.xp >= u.xpToNext) {
-          u = { ...u, xp: u.xp - u.xpToNext, level: u.level + 1, xpToNext: (u.level + 1) * 100, maxHp: u.maxHp + 8 };
+        // XP (only if not already level 30)
+        if (u.level < 30) {
+          u.xp += d.xpReward;
+          while (u.xp >= u.xpToNext && u.level < 30) {
+            const newLevel = u.level + 1;
+            u = { ...u, xp: u.xp - u.xpToNext, level: newLevel, xpToNext: newLevel * 100, maxHp: u.maxHp + 8 };
+            // Check if this level unlocks a new attack
+            const model = MODELS[u.modelId];
+            const learn = model?.learnedAt?.find(la => la.level === newLevel);
+            if (learn) {
+              // Only queue if not already known (avoid duplicates if learnedAt is also in defaults)
+              const known = new Set([...model.defaultAttacks, ...u.learnedAttacks]);
+              if (!known.has(learn.attackId)) {
+                newMoveLearns.push({ botId: u.id, newAttackId: learn.attackId });
+              }
+            }
+          }
+          if (u.level >= 30) {
+            u.xp = 0;
+            u.xpToNext = 0;
+          }
         }
         // Win/loss
         if (d.won) { u.wins += 1; u.rankWins += 1; } else { u.losses += 1; }
@@ -571,11 +715,19 @@ export function reducer(state: GameState, action: Action): GameState {
       for (const m of d.materialDrops) {
         materials[m.id] = (materials[m.id] ?? 0) + m.count;
       }
-      // Fame & defeated trainers
+      // Fame & defeated/encountered trainers
       const defeatedTrainerIds = new Set(state.defeatedTrainerIds);
       if (d.won && d.defeatedTrainerId) {
         defeatedTrainerIds.add(d.defeatedTrainerId);
       }
+      const encounteredTrainerIds = new Set(state.encounteredTrainerIds);
+      if (d.encounteredTrainerId) {
+        encounteredTrainerIds.add(d.encounteredTrainerId);
+      }
+      // Wild capture prompt
+      const pendingCapture = d.wildModelId
+        ? { modelId: d.wildModelId, level: d.wildLevel ?? 1 }
+        : state.pendingCapture;
       // Achievements
       const ach = { ...state.achievements, totalBattles: state.achievements.totalBattles + 1 };
       if (d.source === 'junkyard' && d.won) ach.junkyardWins += 1;
@@ -585,12 +737,15 @@ export function reducer(state: GameState, action: Action): GameState {
         money: state.money + d.prize,
         fame: state.fame + d.fameGained,
         defeatedTrainerIds,
+        encounteredTrainerIds,
         weaponInv,
         armorInv,
         diskInv,
         items,
         materials,
         achievements: ach,
+        pendingMoveLearns: [...state.pendingMoveLearns, ...newMoveLearns],
+        pendingCapture,
         postFight: null,
         pendingBattle: null,
         battleSetupTeam: [],

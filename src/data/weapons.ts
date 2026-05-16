@@ -21,4 +21,22 @@ export const WEAPONS: Record<string, Weapon> = {
   spore_caster:  { id: 'spore_caster',  name: 'Spore Caster',  type: 'bio',       atkBonus: 8, price: 2200, signature: 'sig_overgrowth',   desc: 'Living fungal launcher.' },
   sledge_arm:    { id: 'sledge_arm',    name: 'Sledge Arm',    type: 'steel',     atkBonus: 8, price: 2200, signature: 'sig_industrial',   desc: 'Factory-grade press.' },
   neural_emitter:{ id: 'neural_emitter',name: 'Neural Emitter',type: 'mental',    atkBonus: 8, price: 2200, signature: 'sig_mind_shatter', desc: 'Psi broadcaster.' },
+
+  // ============ FACTION-EXCLUSIVE ADVANCED WEAPONS ============
+  // Sold only at faction houses to affiliated members. 15% discount applied at point of sale.
+  // Higher atkBonus tier than regular store weapons.
+
+  // -- Nature's Own (bio, earth) --
+  living_blade:    { id: 'living_blade',    name: 'Living Blade',    type: 'bio',   atkBonus: 12, price: 5000, signature: 'sig_overgrowth', desc: "A bio-cultured edge. Grown, not forged." },
+  rootmaul:        { id: 'rootmaul',        name: 'Rootmaul',        type: 'earth', atkBonus: 12, price: 5000, signature: 'sig_meteor',     desc: 'Petrified hammer. Heavy as an old grudge.' },
+
+  // -- Elementalists (fire, water, ice) --
+  ember_lance:     { id: 'ember_lance',     name: 'Ember Lance',     type: 'fire',  atkBonus: 12, price: 5000, signature: 'sig_magma_lance', desc: 'A spear lit from the inside.' },
+  riptide_glaive:  { id: 'riptide_glaive',  name: 'Riptide Glaive',  type: 'water', atkBonus: 12, price: 5000, signature: 'sig_tsunami',     desc: 'Coral-bladed polearm.' },
+  rimecutter:      { id: 'rimecutter',      name: 'Rimecutter',      type: 'ice',   atkBonus: 12, price: 5000, signature: 'sig_avalanche',   desc: 'A blade that never warms.' },
+
+  // -- Industrials (steel, lightning, mental) --
+  factory_press:   { id: 'factory_press',   name: 'Factory Press',   type: 'steel',     atkBonus: 12, price: 5000, signature: 'sig_industrial',   desc: 'Hydraulic monster. Stamped serial.' },
+  arc_caster:      { id: 'arc_caster',      name: 'Arc Caster',      type: 'lightning', atkBonus: 12, price: 5000, signature: 'sig_chain_storm',  desc: 'Capacitor staff. Smells of ozone.' },
+  cogwave_emitter: { id: 'cogwave_emitter', name: 'Cogwave Emitter', type: 'mental',    atkBonus: 12, price: 5000, signature: 'sig_mind_shatter', desc: 'A thinking weapon. It does not like being held.' },
 };

@@ -274,12 +274,20 @@ export function useBattleOrchestrator() {
     const materialDrops: { id: string; count: number }[] = [];
 
     // ---- fame calculation ----
+    // Encounter happens regardless of win/loss; fame only on win.
+    // Direct trainer-source challenges (Ranking-screen taps) give NO fame —
+    // fame comes only from structured events (tournaments, story, gym, faction).
     let fameGained = 0;
     let defeatedTrainerId: string | undefined;
+    const encounteredTrainerId: string | undefined = battle.trainerId;
+    const allowFameFromTrainer = battle.source !== 'trainer';
     if (won) {
-      if (battle.trainerId) {
+      if (battle.trainerId && allowFameFromTrainer) {
         const already = state.defeatedTrainerIds.has(battle.trainerId);
         fameGained += fameRewardForDefeating(battle.trainerId, already);
+      }
+      // even direct challenges still track defeat
+      if (battle.trainerId) {
         defeatedTrainerId = battle.trainerId;
       }
       // tournament/battle-config flat bonus (per fight, plus the per-trainer reward)
@@ -358,6 +366,12 @@ export function useBattleOrchestrator() {
       xpReward,
       fameGained,
       defeatedTrainerId,
+      encounteredTrainerId,
+      // Wild capture trigger (on win, junkyard source, has wildModelId)
+      wildModelId: won && battle.source === 'junkyard' && battle.wildModelId
+        ? battle.wildModelId : undefined,
+      wildLevel: won && battle.source === 'junkyard' && battle.wildModelId
+        ? battle.oppLevel : undefined,
       source: battle.source,
       sourceId: battle.sourceId,
       title,
