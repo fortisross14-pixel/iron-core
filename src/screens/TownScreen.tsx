@@ -169,11 +169,11 @@ export function TownScreen() {
         </div>
       </div>
 
-      <div style={{ marginBottom: theme.space.sm }}>
+      <div style={{ marginBottom: theme.space.sm, position: 'relative', zIndex: 1 }}>
         <BracketLabel>LOCATIONS · {places.filter(p => isUnlocked(p)).length}/{places.length}</BracketLabel>
       </div>
 
-      <div style={listStyle}>
+      <div style={{ ...listStyle, position: 'relative', zIndex: 1 }}>
         {places.map(p => {
           const unlocked = isUnlocked(p);
           const isFaction = p.kind === 'faction_house';
@@ -379,9 +379,13 @@ const backStyle = (p: { c3: string }): CSSProperties => ({
   fontFamily: theme.font.mono, fontSize: theme.size.tiny,
   letterSpacing: theme.letter.wide,
   cursor: 'pointer', padding: 0, marginBottom: theme.space.md,
+  // Stay above the backdrop (which sits at z-index 0)
+  position: 'relative',
+  zIndex: 1,
 });
 const cityInfoCardStyle = (p: { c1: string; c3: string; c5: string }): CSSProperties => ({
   position: 'relative',
+  zIndex: 1,
   padding: theme.space.md,
   marginBottom: theme.space.md,
   background: `linear-gradient(180deg, ${p.c5}d0 0%, ${theme.color.bgRaised}cc 100%)`,
