@@ -41,6 +41,21 @@ export function xpToNext(level: number): number {
 export function createBot(modelId: string, firstName?: string, level = 1): Bot | null {
   const model = MODELS[modelId];
   if (!model) return null;
+  // Auto-learn every attack the model gains by its starting level.
+  // This matters for opponents (spawned mid-game) AND for any starter
+  // promoted past level 2 via story logic. Excludes the basic_strike default
+  // which is already in defaultAttacks.
+  const learnedAttacks: string[] = [];
+  if (model.learnedAt) {
+    for (const learn of model.learnedAt) {
+      if (learn.level <= level) {
+        // Avoid duplicates with whatever's in model.defaultAttacks
+        if (!model.defaultAttacks.includes(learn.attackId) && !learnedAttacks.includes(learn.attackId)) {
+          learnedAttacks.push(learn.attackId);
+        }
+      }
+    }
+  }
   return {
     id: uid(),
     modelId,
@@ -49,10 +64,12 @@ export function createBot(modelId: string, firstName?: string, level = 1): Bot |
     xp: 0,
     xpToNext: xpToNext(level),
     maxHp: model.maxHp,
+    currentHp: model.maxHp,
+    currentBattery: 50,  // standard_cell default cap
     battery: null,  // null = factory standard_cell (50 cap)
     weapon: null,
     armor: null,
-    learnedAttacks: [],
+    learnedAttacks,
     statBoosts: { attack: 0, defense: 0, speed: 0 },
     disksUsed: 0,
     rank: 'rookie',
@@ -116,7 +133,7 @@ export function generateJunkyardWild(
     level: lvl,
     rankId: 'rookie',
     forceModelId: pick(pool),
-    forceFirstName: 'Feral',
+    forceFirstName: 'Wild',
   });
 }
 

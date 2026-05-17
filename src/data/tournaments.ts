@@ -25,6 +25,10 @@ export const TOURNAMENTS: Record<string, MultiFightEvent> = {
     championFameBonus: 5,
     championPrizeBonus: 150,
     championFlag: 'senior_cup_won',
+    championSpeakerName: 'Principal Halward',
+    championSpeakerTitle: 'Ironhaven Academy',
+    championMedal: 'Senior Cup Medal',
+    championSpeech: "I knew you had it in you. Every spring this town watches our seniors fight, and every spring most of them go back to the foundry. You won't. You belong out there — in the official circuit, on the inter-faction stage, maybe even the Ultimate Tournament one day. Make your school proud, %PLAYER%. Come back when you're champion of the world. We'll be watching.",
     bracket: [
       { trainerId: 'am_001', oppLevel: 1, fameOnWin: 1, prizeOnWin: 75,  xpOnWin: 60, subtitle: 'A nervous classmate' },
       { trainerId: 'am_005', oppLevel: 3, fameOnWin: 1, prizeOnWin: 125, xpOnWin: 90, subtitle: 'Last year\'s runner-up' },

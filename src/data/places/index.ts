@@ -9,12 +9,14 @@
 
 import { IRONHAVEN_PLACES } from './Ironhaven';
 import { VOLTSPIRE_PLACES } from './Voltspire';
+import { EMBERBOLD_PLACES } from './Emberbold';
 import { HOLLOWMERE_PLACES } from './Hollowmere';
 import type { Place } from './types';
 
 export const CITY_PLACES: Record<string, Place[]> = {
   ironhaven: IRONHAVEN_PLACES,
   voltspire: VOLTSPIRE_PLACES,
+  emberbold: EMBERBOLD_PLACES,
   hollowmere: HOLLOWMERE_PLACES,
 };
 

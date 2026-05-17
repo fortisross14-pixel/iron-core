@@ -544,8 +544,12 @@ export function useBattleOrchestrator() {
     // Otherwise — apply rewards and route back.
     // For retryable events (tier tests), return to the location screen so
     // the player sees their updated event progress and can pick the next fight.
+    //
+    // IMPORTANT: We stay on the postfight scene while level-up announcements
+    // drain. The useEffect in App watches pendingLevelUps and routes onward
+    // (to captureChoice if there's a wild capture pending, else to location).
     dispatch({ type: 'APPLY_REWARDS' });
-    dispatch({ type: 'GO_SCENE', scene: 'location' });
+    // No GO_SCENE here — App.tsx routes after level-ups settle.
   }, [state.postFight, state.pendingBattle, state.bots, state.crew, dispatch]);
 
   return { startBattle, pickTarget, pickItem, defend, selfRepair, selfCharge, abandon, ackPostFight };

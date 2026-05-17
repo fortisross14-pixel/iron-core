@@ -75,8 +75,11 @@ export function makeCombatBot(
     armor: bot.armor,
     learnedAttacks: bot.learnedAttacks,
     side,
-    hp: carryover?.hp ?? bot.maxHp,
-    bat: carryover?.bat ?? maxBattery,
+    // Persistent damage: player bots start combat at their currentHp / currentBattery
+    // (or maxHp/maxBattery for opp bots — they're fresh each fight).
+    // Tournament carryover overrides this (mid-bracket continuity).
+    hp: carryover?.hp ?? (side === 'player' ? Math.max(1, bot.currentHp) : bot.maxHp),
+    bat: carryover?.bat ?? (side === 'player' ? Math.max(0, bot.currentBattery) : maxBattery),
     baseStats: getBotStats(bot, mentorBonuses),
     statMods: { attack: 0, defense: 0, speed: 0 },
     statuses: [],
@@ -269,9 +272,12 @@ export function executeAttack(
 export function getActiveAttacks(bot: Pick<Bot, 'modelId' | 'learnedAttacks'>): Attack[] {
   const model = MODELS[bot.modelId];
   if (!model) return [];
-  const ids = bot.learnedAttacks && bot.learnedAttacks.length > 0
-    ? bot.learnedAttacks
-    : model.defaultAttacks;
+  // Combine default attacks (always present, e.g. basic_strike) with learned
+  // attacks from level-ups and attack disks. Deduplicated.
+  const ids = Array.from(new Set([
+    ...model.defaultAttacks,
+    ...(bot.learnedAttacks ?? []),
+  ]));
   return ids.map(id => ATTACKS[id]).filter(Boolean);
 }
 

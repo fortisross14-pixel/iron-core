@@ -78,6 +78,14 @@ export interface MultiFightEvent {
   championFlag?: string;         // flag set on full completion
   championTierUpgrade?: TrainerTier;  // for tier_test events — bump to this tier
   championCityUnlock?: string;        // unlock this city on full completion
+  /** Name/title of the person who hands out the prize. Shown on victory screen. */
+  championSpeakerName?: string;
+  /** Optional title under the speaker name (e.g. "High School Principal"). */
+  championSpeakerTitle?: string;
+  /** The speech shown after full completion. Can include the player name with %PLAYER% token. */
+  championSpeech?: string;
+  /** Medal name awarded on full completion. */
+  championMedal?: string;
 
   // The fight list
   bracket: EventFight[];

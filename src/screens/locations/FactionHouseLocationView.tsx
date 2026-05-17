@@ -10,7 +10,7 @@
  * Non-members see only collection status + an option to consider affiliation.
  */
 
-import { CSSProperties, useState } from 'react';
+import { CSSProperties, useEffect, useState } from 'react';
 import { useGame } from '../../state/GameStore';
 import { getPlace } from '../../data/places';
 import { FACTIONS } from '../../data/factions';
@@ -36,6 +36,13 @@ import type { PendingBattle } from '../../state/types';
 
 type Sub = 'main' | 'store' | 'grind' | 'fights' | 'president';
 
+/** Map Voltspire faction-house place ids to the "visited" story flag set on entry. */
+const VOLT_VISIT_FLAGS: Record<string, string> = {
+  volt_natures: 'volt_natures_visited',
+  volt_elemental: 'volt_elemental_visited',
+  volt_industrial: 'volt_industrial_visited',
+};
+
 export function FactionHouseLocationView({ locationId }: { locationId: string }) {
   const { state, dispatch } = useGame();
   const place = getPlace(locationId);
@@ -43,6 +50,16 @@ export function FactionHouseLocationView({ locationId }: { locationId: string })
 
   const f = FACTIONS[place.factionId];
   const affiliated = state.factionId === place.factionId;
+
+  // Mark this Voltspire faction house as visited (idempotent flag set).
+  // Reducer auto-sets `volt_factions_all_visited` when all three are visited.
+  useEffect(() => {
+    const flag = VOLT_VISIT_FLAGS[locationId];
+    if (flag && !state.storyFlags.has(flag)) {
+      dispatch({ type: 'SET_FLAG', flag });
+    }
+  }, [locationId, state.storyFlags, dispatch]);
+
   const otherFaction = !!state.factionId && state.factionId !== place.factionId;
   const factionPalette = makePaletteFromHex(theme.factionColor[place.factionId]);
 

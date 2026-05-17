@@ -21,6 +21,10 @@ export interface Bot {
   xp: number;
   xpToNext: number;
   maxHp: number;
+  /** Current HP outside combat. Persists damage between fights — workshop restores. */
+  currentHp: number;
+  /** Current battery outside combat. Persists drain between fights — workshop restores. */
+  currentBattery: number;
   /** Equipped battery (null = factory standard_cell). Determines maxBattery. */
   battery: string | null;
   weapon: string | null;

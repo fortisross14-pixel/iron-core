@@ -31,29 +31,38 @@ export interface CityPalette {
 }
 
 export const CITY_PALETTES: Record<string, CityPalette> = {
-  // Ironhaven — forge village. Amber. Warm. Workshop-glow.
+  // Ironhaven — industrial foundry village. Iron-grey, gunmetal,
+  // hazard-yellow accents (sparingly). The look of a smokey factory floor.
   ironhaven: {
-    c1: '#ffb800',
-    c2: '#ffd84a',
-    c3: '#d4a020',
-    c4: '#7a5e1f',
-    c5: '#2b1f08',
+    c1: '#c8c8d0',  // brushed steel — the dominant trim color
+    c2: '#ffd84a',  // hazard-yellow — used very sparingly for highlights
+    c3: '#8a8a92',  // mid steel-grey
+    c4: '#3a3a42',  // deep iron
+    c5: '#0e0e12',  // near-black backdrop
   },
-  // Voltspire — storm town. Electric blue. Cold. Capacitor-arc.
+  // Voltspire — storm town. Electric yellow-blue. Capacitor arc, lightning rods.
   voltspire: {
-    c1: '#00d4ff',
-    c2: '#50e8ff',
-    c3: '#2090c0',
-    c4: '#0f4060',
-    c5: '#04111c',
+    c1: '#ffe450',  // electric yellow — primary lightning color
+    c2: '#80f0ff',  // pale ionized cyan — secondary arc color
+    c3: '#bfa830',  // mid yellow
+    c4: '#3a2a08',  // dark amber
+    c5: '#05080f',  // deep stormy background
   },
-  // Hollowmere — coastal trade city. Magenta. Hot. Neon-trader.
+  // Hollowmere — coastal trade city on the bay. Deep ocean blue + bright aqua + chrome.
   hollowmere: {
-    c1: '#ff2a90',
-    c2: '#ff6cc0',
-    c3: '#c04080',
-    c4: '#6a1f48',
-    c5: '#1f0a14',
+    c1: '#3aa8ff',  // bright ocean blue
+    c2: '#80e0ff',  // foam-aqua
+    c3: '#1a6090',  // mid deep-water
+    c4: '#0a2840',  // abyssal
+    c5: '#020a14',  // night-sea backdrop
+  },
+  // Emberbold — volcanic town. Crimson, molten orange, charcoal.
+  emberbold: {
+    c1: '#ff5028',  // molten lava red-orange
+    c2: '#ffb068',  // bright ember
+    c3: '#a02810',  // banked coal
+    c4: '#3a1408',  // burnt char
+    c5: '#0e0604',  // black ash backdrop
   },
 };
 
@@ -82,14 +91,10 @@ export const theme = {
     panel: '#0f0f12',
     border: '#1a1a1f',
     borderStrong: '#2a2a30',
-    ink: '#050505',
-    rust: '#9a4518',
-    grime: '#17110b',
-    scratch: '#fff2b060',
 
     // -- text --
-    text: '#f0ead8',
-    textMuted: '#9b9688',
+    text: '#e8e8e0',
+    textMuted: '#888',
     textDim: '#666',
     textVeryDim: '#444',
     textBlack: '#0a0a0c',
@@ -106,8 +111,6 @@ export const theme = {
     // we provide a neutral value here. The new way: useCityPalette().c1.
     accent: '#ffb800',
     accentDim: '#ffb80040',
-    cardYellow: '#ffd026',
-    cardOrange: '#ff7a2f',
   },
 
   // -- mecha type colors (unchanged — type identity is global) --
@@ -136,8 +139,8 @@ export const theme = {
     body: "'DM Sans', system-ui, sans-serif",
   },
   size: {
-    h1: 28, h2: 20, h3: 16,
-    body: 14, small: 12, tiny: 10, micro: 9,
+    h1: 30, h2: 22, h3: 17,
+    body: 15, small: 13, tiny: 11, micro: 10,
   },
   space: {
     xs: 4, sm: 6, md: 10, lg: 14, xl: 18, xxl: 24,
@@ -148,7 +151,7 @@ export const theme = {
   z: {
     base: 1, tabs: 100, toast: 200, modal: 300,
   },
-  maxWidth: 520,
+  maxWidth: 720,
 };
 
 export type Theme = typeof theme;

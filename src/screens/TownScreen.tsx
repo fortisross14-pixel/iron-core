@@ -23,6 +23,7 @@ import { theme, CITY_PALETTES, NEUTRAL_PALETTE } from '../styles/theme';
 import { useCityPalette, PaletteOverride } from '../styles/cityPalette';
 import { Shell } from '../components/Shell';
 import { Frame, BracketLabel, EdgeBand } from '../components/Frame';
+import { CityMini, CityFull } from '../components/CityImage';
 
 type View = 'world' | 'city';
 
@@ -52,9 +53,11 @@ export function TownScreen() {
       <PaletteOverride palette={NEUTRAL_PALETTE}>
         <Shell pageLabel="IN TRANSIT">
           <div style={travelWrapStyle}>
-            <div style={travelSpinnerStyle}>◆</div>
             <div style={travelTextStyle}>SIGNAL LOST · TRAVELING TO</div>
             <div style={travelCityStyle}>{dest?.name ?? '???'}</div>
+            <div style={travelImgWrapStyle}>
+              <CityFull cityId={traveling} />
+            </div>
             <div style={travelDotsStyle}>...</div>
           </div>
         </Shell>
@@ -97,9 +100,13 @@ export function TownScreen() {
                     <span style={cornerBR(cityPalette.c1)} />
                   </>
                 )}
-                <div style={{ ...cityIconStyle, color: unlocked ? cityPalette.c1 : theme.color.textDim, textShadow: unlocked ? `0 0 12px ${cityPalette.c1}` : 'none' }}>
-                  {cityIconForTier(city.tier)}
-                </div>
+                {unlocked ? (
+                  <CityMini cityId={city.id} size={52} borderColor={cityPalette.c1} />
+                ) : (
+                  <div style={{ ...cityIconStyle, color: theme.color.textDim }}>
+                    {cityIconForTier(city.tier)}
+                  </div>
+                )}
                 <div style={cityBodyStyle}>
                   <div style={cityNameStyle}>
                     {unlocked ? city.name : '??? ???'}
@@ -109,9 +116,14 @@ export function TownScreen() {
                       </span>
                     )}
                   </div>
-                  <div style={cityDescStyle}>
+                  <div style={cityRegionStyle}>
                     {unlocked ? city.region : 'Not yet discovered.'}
                   </div>
+                  {unlocked && (
+                    <div style={cityDescStyle}>
+                      {city.shortDesc}
+                    </div>
+                  )}
                 </div>
                 {isCurrent && (
                   <div style={{ ...youAreHereStyle, color: cityPalette.c1 }}>YOU ARE HERE</div>
@@ -139,17 +151,20 @@ export function TownScreen() {
       <button onClick={() => setView('world')} style={backStyle(palette)}>← WORLD MAP</button>
 
       <div style={cityHeaderStyle}>
-        <div>
-          <div style={titleStyle(palette)}>{city.name}</div>
-          <div style={{ ...subtitleStyle(palette), marginTop: 2 }}>{city.region}</div>
+        <div style={cityHeaderLeftStyle}>
+          <CityMini cityId={city.id} size={56} borderColor={palette.c1} />
+          <div>
+            <div style={titleStyle(palette)}>{city.name}</div>
+            <div style={{ ...subtitleStyle(palette), marginTop: 2 }}>{city.region}</div>
+          </div>
         </div>
         <span style={{ ...cityTierBadgeStyle, color: palette.c2, borderColor: palette.c1 }}>
           {CITY_TIER_LABEL[city.tier]}
         </span>
       </div>
       <EdgeBand color={palette.c1} />
-      <div style={{ ...subtitleStyle(palette), marginTop: theme.space.sm, marginBottom: theme.space.md }}>
-        {city.desc}
+      <div style={cityLongDescStyle(palette)}>
+        {city.longDesc}
       </div>
 
       <div style={{ marginBottom: theme.space.sm }}>
@@ -293,209 +308,123 @@ function cornerBR(color: string, size = 8): CSSProperties {
 }
 
 // ============================================================
-// STYLES — worn arena-map / city-hub pass
+// STYLES
 // ============================================================
 
 const titleStyle = (p: { c1: string }): CSSProperties => ({
   fontFamily: theme.font.display,
-  fontSize: theme.size.h1 + 4,
+  fontSize: theme.size.h1,
   letterSpacing: theme.letter.wider,
-  color: '#fff7d5',
-  lineHeight: 0.92,
-  textTransform: 'uppercase',
-  textShadow: `0 0 18px ${p.c1}75, 3px 3px 0 ${theme.color.ink}`,
+  color: '#fff',
+  textShadow: `0 0 14px ${p.c1}60`,
 });
 const subtitleStyle = (p: { c3: string }): CSSProperties => ({
-  fontSize: theme.size.tiny,
-  color: p.c3,
-  marginBottom: theme.space.lg,
-  lineHeight: 1.55,
-  marginTop: 4,
-  fontFamily: theme.font.mono,
-  letterSpacing: theme.letter.normal,
-  textTransform: 'uppercase',
+  fontSize: theme.size.tiny, color: p.c3,
+  marginBottom: theme.space.lg, lineHeight: 1.5, marginTop: 2,
+  fontFamily: theme.font.mono, letterSpacing: theme.letter.tight,
 });
 
-const cityListStyle: CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 10,
-  padding: 8,
-  background:
-    `linear-gradient(180deg, rgba(255,255,255,0.035), transparent 22%),
-     radial-gradient(circle at 14% 0%, rgba(255,184,0,0.12), transparent 32%),
-     ${theme.color.bgSunken}`,
-  border: `1px solid ${theme.color.borderStrong}`,
-  boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.035), inset 0 -28px 45px rgba(0,0,0,0.45)',
-};
+const cityListStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 8 };
 const cityRowStyle: CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: '42px 1fr auto',
-  gap: 12,
-  alignItems: 'center',
-  padding: '15px 14px 15px 12px',
-  textAlign: 'left',
-  color: theme.color.text,
-  font: 'inherit',
-  width: '100%',
-  position: 'relative',
-  overflow: 'hidden',
-  clipPath: 'polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px))',
-  boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.035), 0 6px 14px rgba(0,0,0,0.35)',
+  display: 'grid', gridTemplateColumns: '52px 1fr auto', gap: 14, alignItems: 'center',
+  padding: '14px 14px',
+  textAlign: 'left', color: theme.color.text, font: 'inherit',
+  width: '100%', position: 'relative',
 };
-const cityIconStyle: CSSProperties = {
-  fontSize: 28,
-  textAlign: 'center',
-  background: 'rgba(0,0,0,0.34)',
-  border: `1px solid ${theme.color.borderStrong}`,
-  minHeight: 40,
-  display: 'grid',
-  placeItems: 'center',
-};
-const cityBodyStyle: CSSProperties = { minWidth: 0, position: 'relative', zIndex: 2 };
+const cityIconStyle: CSSProperties = { fontSize: 28, textAlign: 'center', width: 52 };
+const cityBodyStyle: CSSProperties = { minWidth: 0 };
 const cityNameStyle: CSSProperties = {
-  fontFamily: theme.font.display,
-  fontSize: theme.size.h3 + 2,
-  letterSpacing: theme.letter.wide,
-  color: '#fff',
-  display: 'flex',
-  alignItems: 'center',
-  gap: 7,
-  flexWrap: 'wrap',
-  textTransform: 'uppercase',
-  textShadow: `2px 2px 0 ${theme.color.ink}`,
+  fontFamily: theme.font.display, fontSize: theme.size.h3,
+  letterSpacing: theme.letter.wide, color: '#fff',
+  display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap',
 };
 const cityTierBadgeStyle: CSSProperties = {
+  fontFamily: theme.font.mono, fontSize: theme.size.micro,
+  letterSpacing: theme.letter.wide,
+  padding: '2px 6px', border: '1px solid',
+};
+const cityRegionStyle: CSSProperties = {
   fontFamily: theme.font.mono,
   fontSize: theme.size.micro,
   letterSpacing: theme.letter.wide,
-  padding: '3px 7px',
-  border: '1px solid',
-  background: 'rgba(0,0,0,0.44)',
-  boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.035)',
-  textTransform: 'uppercase',
+  color: theme.color.textMuted,
+  marginTop: 2,
 };
 const cityDescStyle: CSSProperties = {
-  fontSize: theme.size.tiny,
-  color: theme.color.textMuted,
-  marginTop: 4,
-  fontFamily: theme.font.body,
-  lineHeight: 1.35,
+  fontSize: theme.size.tiny, color: theme.color.textDim, marginTop: 6,
+  fontFamily: theme.font.body, lineHeight: 1.4,
 };
+const cityLongDescStyle = (p: { c3: string }): CSSProperties => ({
+  fontFamily: theme.font.body,
+  fontSize: theme.size.small,
+  color: theme.color.text,
+  lineHeight: 1.6,
+  marginTop: theme.space.md,
+  marginBottom: theme.space.md,
+  padding: theme.space.md,
+  background: theme.color.bgSunken,
+  borderLeft: `2px solid ${p.c3}`,
+});
 const youAreHereStyle: CSSProperties = {
-  fontFamily: theme.font.mono,
-  fontSize: theme.size.micro,
+  fontFamily: theme.font.mono, fontSize: theme.size.micro,
   letterSpacing: theme.letter.wide,
-  textAlign: 'right',
-  flexShrink: 0,
+  textAlign: 'right', flexShrink: 0,
   animation: 'ic-flicker 5s infinite',
-  padding: '4px 6px',
-  background: 'rgba(0,0,0,0.42)',
-  borderLeft: `3px solid currentColor`,
 };
 
 const backStyle = (p: { c3: string }): CSSProperties => ({
-  background: 'rgba(0,0,0,0.28)',
-  border: `1px solid ${p.c3}55`,
-  color: p.c3,
-  fontFamily: theme.font.mono,
-  fontSize: theme.size.tiny,
+  background: 'transparent', border: 'none', color: p.c3,
+  fontFamily: theme.font.mono, fontSize: theme.size.tiny,
   letterSpacing: theme.letter.wide,
-  cursor: 'pointer',
-  padding: '7px 9px',
-  marginBottom: theme.space.md,
-  textTransform: 'uppercase',
+  cursor: 'pointer', padding: 0, marginBottom: theme.space.md,
 });
 const cityHeaderStyle: CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'flex-end',
-  marginBottom: theme.space.sm,
-  padding: '4px 0 2px',
+  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+  marginBottom: theme.space.sm, gap: theme.space.md,
 };
-const listStyle: CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 8,
-  padding: 8,
-  background:
-    `linear-gradient(180deg, rgba(255,255,255,0.03), transparent 20%),
-     linear-gradient(90deg, rgba(255,184,0,0.04), transparent 42%),
-     ${theme.color.bgSunken}`,
-  border: `1px solid ${theme.color.borderStrong}`,
+const cityHeaderLeftStyle: CSSProperties = {
+  display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 0,
 };
+const listStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 6 };
 const rowStyle: CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: '34px 1fr auto',
-  gap: 11,
-  alignItems: 'center',
-  padding: '13px 12px',
-  textAlign: 'left',
-  color: theme.color.text,
-  font: 'inherit',
-  width: '100%',
-  position: 'relative',
-  overflow: 'hidden',
-  clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))',
-  boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.035), 0 5px 12px rgba(0,0,0,0.32)',
+  display: 'grid', gridTemplateColumns: '28px 1fr auto', gap: 10,
+  alignItems: 'center', padding: '12px 14px',
+  textAlign: 'left', color: theme.color.text, font: 'inherit',
+  width: '100%', position: 'relative',
 };
-const iconStyle: CSSProperties = {
-  fontSize: 18,
-  textAlign: 'center',
-  background: 'rgba(0,0,0,0.35)',
-  border: `1px solid ${theme.color.border}`,
-  width: 30,
-  height: 30,
-  display: 'grid',
-  placeItems: 'center',
-};
-const bodyStyle: CSSProperties = { minWidth: 0, position: 'relative', zIndex: 2 };
+const iconStyle: CSSProperties = { fontSize: 18, textAlign: 'center' };
+const bodyStyle: CSSProperties = { minWidth: 0 };
 const nameStyle: CSSProperties = {
-  fontFamily: theme.font.display,
-  fontSize: theme.size.body + 2,
-  letterSpacing: theme.letter.normal,
-  color: '#fff',
-  textTransform: 'uppercase',
-  textShadow: `2px 2px 0 ${theme.color.ink}`,
+  fontFamily: theme.font.display, fontSize: theme.size.body,
+  letterSpacing: theme.letter.tight, color: '#fff',
 };
 const descStyle: CSSProperties = {
-  fontSize: theme.size.tiny,
-  color: theme.color.textDim,
-  marginTop: 3,
+  fontSize: theme.size.tiny, color: theme.color.textDim, marginTop: 2,
   fontFamily: theme.font.body,
-  lineHeight: 1.35,
 };
 const tagStyle: CSSProperties = {
-  fontFamily: theme.font.mono,
-  fontSize: 9,
+  fontFamily: theme.font.mono, fontSize: 9,
   letterSpacing: theme.letter.wide,
-  padding: '4px 6px',
-  border: '1px solid',
-  flexShrink: 0,
-  alignSelf: 'center',
-  background: 'rgba(0,0,0,0.42)',
-  textTransform: 'uppercase',
+  padding: '3px 6px', border: '1px solid',
+  flexShrink: 0, alignSelf: 'center',
 };
 
 const travelWrapStyle: CSSProperties = {
   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
   minHeight: '60vh', gap: 16,
-  background: `radial-gradient(circle at center, ${NEUTRAL_PALETTE.c5} 0%, transparent 60%)`,
 };
-const travelSpinnerStyle: CSSProperties = {
-  fontSize: 60, color: NEUTRAL_PALETTE.c1,
-  textShadow: `0 0 30px ${NEUTRAL_PALETTE.c1}`,
-  animation: 'ic-spin 1.5s linear infinite',
+const travelImgWrapStyle: CSSProperties = {
+  width: '100%',
+  maxWidth: 480,
+  margin: '8px 0',
 };
 const travelTextStyle: CSSProperties = {
   fontFamily: theme.font.mono, fontSize: theme.size.tiny,
   color: NEUTRAL_PALETTE.c3, letterSpacing: theme.letter.wide,
-  textTransform: 'uppercase',
 };
 const travelCityStyle: CSSProperties = {
-  fontFamily: theme.font.display, fontSize: theme.size.h2 + 8,
+  fontFamily: theme.font.display, fontSize: theme.size.h2,
   letterSpacing: theme.letter.wider, color: '#fff',
-  textShadow: '3px 3px 0 #000',
 };
 const travelDotsStyle: CSSProperties = {
   fontFamily: theme.font.mono, fontSize: theme.size.h1,

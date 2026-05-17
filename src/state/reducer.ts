@@ -11,7 +11,7 @@ import { MATERIALS } from '../data/materials';
 import { MODELS } from '../data/models';
 import { STORY_SCENES } from '../data/story';
 import { LOCATIONS } from '../data/locations';
-import { getDiskCapacity, getBotType, bestStatOf, getBotStats } from '../game/stats';
+import { getDiskCapacity, getBotType, bestStatOf, getBotStats, maxBatteryOf } from '../game/stats';
 import type { CrewMember } from '../game/types';
 import { getCurrentStats } from '../game/combat';
 
@@ -143,6 +143,11 @@ export function reducer(state: GameState, action: Action): GameState {
     case 'SET_FLAG': {
       const next = new Set(state.storyFlags);
       next.add(action.flag);
+      // Derived flag: visit all three Voltspire faction houses → unlock gatekeeper
+      const factionFlags = ['volt_natures_visited', 'volt_elemental_visited', 'volt_industrial_visited'];
+      if (factionFlags.includes(action.flag) && factionFlags.every(f => next.has(f))) {
+        next.add('volt_factions_all_visited');
+      }
       return { ...state, storyFlags: next };
     }
 
@@ -712,12 +717,15 @@ export function reducer(state: GameState, action: Action): GameState {
     }
 
     case 'WORKSHOP_FULL_HEAL': {
-      // Workshops fully restore HP and battery for all roster bots.
-      // Since the persistent Bot doesn't track current HP (it's restored at
-      // fight start), the only state we actually need to clear is the
-      // tournament carry-over. The flavor toast confirms the action visually.
+      // Workshops fully restore HP and battery on every roster bot.
+      const bots = state.bots.map(b => ({
+        ...b,
+        currentHp: b.maxHp,
+        currentBattery: maxBatteryOf(b),
+      }));
       return {
         ...state,
+        bots,
         activeTournament: state.activeTournament
           ? { ...state.activeTournament, carryOver: undefined }
           : null,
@@ -843,6 +851,15 @@ export function reducer(state: GameState, action: Action): GameState {
         }
         // Win/loss
         if (d.won) { u.wins += 1; u.rankWins += 1; } else { u.losses += 1; }
+        // Persist combat damage: HP/BAT at end of fight carries over until
+        // the player heals at a workshop. On a level-up the maxHp grew, so
+        // we add the heal that the level-up provided (8 HP per level gained).
+        const endState = d.playerEndState?.[b.id];
+        if (endState) {
+          const hpGainedFromLevels = u.maxHp - b.maxHp;  // 0 if no level-up
+          u.currentHp = Math.min(u.maxHp, Math.max(0, endState.hp + hpGainedFromLevels));
+          u.currentBattery = Math.max(0, endState.bat);
+        }
         return u;
       });
       // Loot

@@ -80,6 +80,14 @@ function deserialize(saved: any): GameState {
   if (typeof out.playerName !== 'string') out.playerName = '';
   // Hometown must always be unlocked, even if a corrupt save lost it
   if (!out.unlockedCities.has('ironhaven')) out.unlockedCities.add('ironhaven');
+  // Backfill persistent HP/BAT for bots saved before the currentHp/currentBattery fields existed
+  if (Array.isArray(out.bots)) {
+    out.bots = out.bots.map((b: any) => ({
+      ...b,
+      currentHp: typeof b.currentHp === 'number' ? b.currentHp : b.maxHp,
+      currentBattery: typeof b.currentBattery === 'number' ? b.currentBattery : 50,
+    }));
+  }
   return out as GameState;
 }
 

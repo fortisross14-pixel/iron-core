@@ -76,12 +76,14 @@ export function MechaCard(props: Props) {
   let armor: string | null = null;
   let signatureAttack: typeof ATTACKS[string] | null = null;
   let nameLine = model.surname;
+  let trainerLine: string | null = null;  // Player-given name (only when roster mode)
   let curXp: number | null = null;
   let xpToNext: number | null = null;
 
   if (props.mode === 'roster') {
     const bot = props.bot;
-    nameLine = `${bot.firstName} ${model.surname}`;
+    nameLine = model.surname;
+    trainerLine = bot.firstName;
     displayLevel = bot.level;
     maxHp = bot.maxHp;
     curHp = bot.maxHp; // persistent bot doesn't track current HP outside combat
@@ -131,6 +133,9 @@ export function MechaCard(props: Props) {
           {/* === TOP: name + type + rarity + level/HP/BAT === */}
           <div style={topStripStyle}>
             <div style={topLeftStyle}>
+              {trainerLine && (
+                <div style={trainerNameStyle(tColor)}>{trainerLine}</div>
+              )}
               <div style={nameStyle(tColor)}>{nameLine}</div>
               <div style={typeRowStyle}>
                 <span style={{ ...typeChipStyle, color: tColor, borderColor: tColor }}>
@@ -386,14 +391,26 @@ const topRightStyle: CSSProperties = {
   paddingRight: 32, // leave room for close X
 };
 
+const trainerNameStyle = (tColor: string): CSSProperties => ({
+  fontFamily: theme.font.display,
+  fontSize: 22,
+  letterSpacing: 1.5,
+  color: '#fff',
+  textShadow: `0 0 14px ${tColor}, 0 0 6px #000`,
+  lineHeight: 1.1,
+  fontWeight: 700,
+});
+
 const nameStyle = (tColor: string): CSSProperties => ({
   fontFamily: theme.font.display,
-  fontSize: 24,
-  letterSpacing: 1,
+  fontSize: 22,
+  letterSpacing: 1.5,
   color: '#fff',
-  textShadow: `0 0 12px ${tColor}80, 0 0 4px #000`,
+  textShadow: `0 0 14px ${tColor}, 0 0 6px #000`,
   marginBottom: 4,
+  marginTop: 2,
   lineHeight: 1.1,
+  fontWeight: 700,
 });
 
 const typeRowStyle: CSSProperties = {

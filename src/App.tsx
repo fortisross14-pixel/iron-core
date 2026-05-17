@@ -30,9 +30,10 @@ export function App() {
 
   // If a move-learn is queued and we're on a normal non-combat scene, redirect
   // to the LearnMoveScreen. This makes the prompt feel mandatory but only
-  // appears when the player isn't mid-fight.
+  // appears when the player isn't mid-fight, and waits for level-ups to finish.
   useEffect(() => {
     if (state.pendingMoveLearns.length > 0
+        && state.pendingLevelUps.length === 0
         && state.scene !== 'learnMove'
         && state.scene !== 'combat'
         && state.scene !== 'postfight'
@@ -43,11 +44,13 @@ export function App() {
     if (state.pendingMoveLearns.length === 0 && state.scene === 'learnMove') {
       dispatch({ type: 'GO_SCENE', scene: 'town' });
     }
-  }, [state.pendingMoveLearns.length, state.scene, dispatch]);
+  }, [state.pendingMoveLearns.length, state.pendingLevelUps.length, state.scene, dispatch]);
 
   // Capture/salvage redirect — same idea for wild-mecha-after-fight prompt.
+  // Blocked while level-ups are pending: announcements show first, capture decision after.
   useEffect(() => {
     if (state.pendingCapture
+        && state.pendingLevelUps.length === 0
         && state.scene !== 'captureChoice'
         && state.scene !== 'combat'
         && state.scene !== 'postfight'
@@ -57,7 +60,22 @@ export function App() {
     if (!state.pendingCapture && state.scene === 'captureChoice') {
       dispatch({ type: 'GO_SCENE', scene: 'location' });
     }
-  }, [state.pendingCapture, state.scene, dispatch]);
+  }, [state.pendingCapture, state.pendingLevelUps.length, state.scene, dispatch]);
+
+  // After post-fight rewards are applied (postFight cleared), wait for any
+  // pending level-up announcements to finish, then route off the postfight
+  // scene to either capture-choice (wild capture pending) or location.
+  useEffect(() => {
+    if (state.scene === 'postfight'
+        && state.postFight === null
+        && state.pendingLevelUps.length === 0) {
+      if (state.pendingCapture) {
+        dispatch({ type: 'GO_SCENE', scene: 'captureChoice' });
+      } else {
+        dispatch({ type: 'GO_SCENE', scene: 'location' });
+      }
+    }
+  }, [state.scene, state.postFight, state.pendingLevelUps.length, state.pendingCapture, dispatch]);
 
   let body;
   switch (state.scene) {

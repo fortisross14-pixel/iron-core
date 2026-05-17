@@ -153,6 +153,26 @@ export function MultiFightEventView({ event }: { event: MultiFightEvent }) {
             );
           })}
         </div>
+
+        {fullyComplete && event.championSpeech && (
+          <div style={victoryPanelStyle}>
+            <div style={victoryHeadStyle}>★ TOURNAMENT WON ★</div>
+            {event.championMedal && (
+              <div style={medalStyle}>Awarded: <span style={medalNameStyle}>{event.championMedal}</span></div>
+            )}
+            <div style={speechStyle}>
+              "{event.championSpeech.replace('%PLAYER%', state.playerName || 'champion')}"
+            </div>
+            {event.championSpeakerName && (
+              <div style={speakerLineStyle}>
+                <span style={speakerNameStyle}>— {event.championSpeakerName}</span>
+                {event.championSpeakerTitle && (
+                  <span style={speakerTitleStyle}>, {event.championSpeakerTitle}</span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -162,6 +182,66 @@ const cardStyle: CSSProperties = {
   background: theme.color.bgRaised,
   border: `1px solid ${theme.color.border}`,
   padding: theme.space.md,
+};
+
+const victoryPanelStyle: CSSProperties = {
+  marginTop: theme.space.lg,
+  padding: theme.space.md,
+  background: `linear-gradient(180deg, ${theme.color.gold}15 0%, ${theme.color.bgSunken} 100%)`,
+  border: `1px solid ${theme.color.gold}`,
+  position: 'relative',
+};
+
+const victoryHeadStyle: CSSProperties = {
+  fontFamily: theme.font.display,
+  fontSize: theme.size.h3,
+  letterSpacing: theme.letter.wider,
+  color: theme.color.gold,
+  textAlign: 'center',
+  marginBottom: theme.space.sm,
+  textShadow: `0 0 12px ${theme.color.gold}80`,
+};
+
+const medalStyle: CSSProperties = {
+  fontFamily: theme.font.mono,
+  fontSize: theme.size.tiny,
+  color: theme.color.textMuted,
+  textAlign: 'center',
+  letterSpacing: theme.letter.normal,
+  marginBottom: theme.space.md,
+};
+
+const medalNameStyle: CSSProperties = {
+  color: theme.color.gold,
+  fontWeight: 700,
+};
+
+const speechStyle: CSSProperties = {
+  fontFamily: theme.font.body,
+  fontStyle: 'italic',
+  fontSize: theme.size.small,
+  color: theme.color.text,
+  lineHeight: 1.6,
+  padding: `${theme.space.sm}px ${theme.space.md}px`,
+  borderLeft: `2px solid ${theme.color.gold}`,
+  marginBottom: theme.space.sm,
+};
+
+const speakerLineStyle: CSSProperties = {
+  fontFamily: theme.font.body,
+  fontSize: theme.size.tiny,
+  textAlign: 'right',
+  marginTop: theme.space.xs,
+};
+
+const speakerNameStyle: CSSProperties = {
+  color: '#fff',
+  fontWeight: 700,
+};
+
+const speakerTitleStyle: CSSProperties = {
+  color: theme.color.textMuted,
+  fontStyle: 'italic',
 };
 
 const tierLockedCardStyle: CSSProperties = {
