@@ -55,6 +55,8 @@ export interface ModelData {
   defaultAttacks: string[];
   learnedAt?: LevelLearnedAttack[];
   flavor: string;
+  /** Short pithy in-character line shown on the card. One sentence, all caps recommended. */
+  quote?: string;
 }
 
 export const RARITY_INFO: Record<Rarity, { name: string; color: string }> = {
@@ -139,7 +141,7 @@ function mk(
   id: string, dexNo: number, surname: string, type: MechaType,
   rarity: Rarity, role: string, stats: BaseStats, maxHp: number,
   flavor: string,
-  opts: { acquisition?: string; price?: number; learnedAt?: LevelLearnedAttack[]; defaults?: string[] } = {},
+  opts: { acquisition?: string; price?: number; learnedAt?: LevelLearnedAttack[]; defaults?: string[]; quote?: string } = {},
 ): ModelData {
   return {
     id, dexNo, surname, type, rarity, role,
@@ -150,6 +152,7 @@ function mk(
     defaultAttacks: opts.defaults ?? ['basic_strike', DEFAULT_T1[type]],
     learnedAt: opts.learnedAt ?? PROGRESSION_BY_TYPE[type],
     flavor,
+    quote: opts.quote,
   };
 }
 
@@ -166,19 +169,19 @@ export const MODELS: Record<string, ModelData> = {
   hearthling: mk('hearthling', 1, 'Hearthling', 'fire', 'starter', 'Brawler',
     { attack: 22, defense: 16, speed: 14, intelligence: 14 }, 105,
     'Your uncle built this one. Fire core, hand-forged frame.',
-    { acquisition: "Uncle's workshop", defaults: ['basic_strike', 'ember_punch'] }),
+    { acquisition: "Uncle's workshop", defaults: ['basic_strike', 'ember_punch'], quote: "BUILT BY HAND. FIGHTS WITH HEART." }),
   tideling: mk('tideling', 2, 'Tideling', 'water', 'starter', 'Sustain',
     { attack: 18, defense: 18, speed: 14, intelligence: 16 }, 110,
     'Water-pressure core. Forgives mistakes.',
-    { acquisition: "Uncle's workshop", defaults: ['basic_strike', 'water_jet'] }),
+    { acquisition: "Uncle's workshop", defaults: ['basic_strike', 'water_jet'], quote: "I BEND. I DO NOT BREAK." }),
   sprouting: mk('sprouting', 3, 'Sprouting', 'bio', 'starter', 'Healer',
     { attack: 16, defense: 20, speed: 12, intelligence: 18 }, 115,
     'Half-grown bio-frame. Self-repairs slowly between fights.',
-    { acquisition: "Uncle's workshop", defaults: ['basic_strike', 'spore_lash'] }),
+    { acquisition: "Uncle's workshop", defaults: ['basic_strike', 'spore_lash'], quote: "ROOTS GO DEEP. GROWTH TAKES TIME." }),
 
   // ============ FIRE (12) ============
   // 4 common
-  cinderboar:    mk('cinderboar',    11, 'Cinderboar',    'fire', 'common', 'Brawler',  { attack: 20, defense: 16, speed: 12, intelligence: 10 }, 105, 'Smoking trample frame.', { price: 800 }),
+  cinderboar:    mk('cinderboar',    11, 'Cinderboar',    'fire', 'common', 'Brawler',  { attack: 20, defense: 16, speed: 12, intelligence: 10 }, 105, 'Smoking trample frame.', { price: 800, quote: "I COME THROUGH. NOT AROUND." }),
   emberpup:      mk('emberpup',      12, 'Emberpup',      'fire', 'common', 'Skirmisher', { attack: 18, defense: 12, speed: 16, intelligence: 10 }, 90, 'Loyal but volatile.', { price: 750 }),
   forge_walker:  mk('forge_walker',  13, 'ForgeWalker',   'fire', 'common', 'Tank',     { attack: 16, defense: 22, speed: 8,  intelligence: 12 }, 120, 'Slow, heavy, hot.', { price: 850 }),
   smokebat:      mk('smokebat',      14, 'Smokebat',      'fire', 'common', 'Skirmisher', { attack: 17, defense: 11, speed: 19, intelligence: 12 }, 85, 'Hard to see in a smokescreen.', { price: 800 }),
@@ -215,7 +218,7 @@ export const MODELS: Record<string, ModelData> = {
   poseidon_mk1:  mk('poseidon_mk1',  34, 'PoseidonMk1',   'water', 'legendary', 'Boss',  { attack: 38, defense: 30, speed: 18, intelligence: 24 }, 175, 'Crown of the deep circuit.', { price: 30000 }),
 
   // ============ LIGHTNING (12) ============
-  voltrunner:    mk('voltrunner',    35, 'VoltRunner',    'lightning', 'common', 'Skirmisher', { attack: 20, defense: 10, speed: 24, intelligence: 14 }, 85, 'Light, fast, fragile.', { price: 800 }),
+  voltrunner:    mk('voltrunner',    35, 'VoltRunner',    'lightning', 'common', 'Skirmisher', { attack: 20, defense: 10, speed: 24, intelligence: 14 }, 85, 'Light, fast, fragile.', { price: 800, quote: "I DON'T HIT HARD. I HIT FIRST. THEN I HIT AGAIN." }),
   brittle_charge:mk('brittle_charge',36, 'BrittleCharge', 'lightning', 'common', 'Abandoned',  { attack: 16, defense: 8, speed: 18, intelligence: 8 }, 65, 'Sparks when you get close.', { acquisition: 'Junkyard wild' }),
   sparkfly:      mk('sparkfly',      37, 'Sparkfly',      'lightning', 'common', 'Skirmisher', { attack: 18, defense: 9, speed: 22, intelligence: 12 }, 75, 'A glorified insect.', { price: 700 }),
   conduit_pup:   mk('conduit_pup',   38, 'ConduitPup',    'lightning', 'common', 'Support',    { attack: 16, defense: 12, speed: 20, intelligence: 14 }, 85, 'Routes charge from teammates.', { price: 780 }),

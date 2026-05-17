@@ -6,6 +6,7 @@ import { theme } from '../styles/theme';
 import { useCityPalette } from '../styles/cityPalette';
 import { BracketLabel, EdgeBand } from '../components/Frame';
 import { MechaMini } from '../components/MechaPortrait';
+import { MechaCard } from '../components/MechaCard';
 import { MODELS, MODEL_LIST, TOTAL_DEX, RARITY_INFO } from '../data/models';
 import { WEAPONS } from '../data/weapons';
 import { ARMORS } from '../data/armors';
@@ -74,86 +75,71 @@ const titleStyle = (p: { c1: string }): CSSProperties => ({
 
 function RosterTab() {
   const { state, dispatch } = useGame();
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [cardBotId, setCardBotId] = useState<string | null>(null);
   const mentorBonuses = calcMentorBonuses(state.crew);
 
   if (state.bots.length === 0) {
     return <div style={emptyStyle}>No bots yet. Visit the workshop or the Voltspire market.</div>;
   }
 
+  const cardBot = cardBotId ? state.bots.find(b => b.id === cardBotId) ?? null : null;
+
   return (
     <>
       {state.bots.map(bot => {
         const m = MODELS[bot.modelId];
         const t = TYPE_INFO[m.type];
-        const stats = getBotStats(bot, mentorBonuses);
         const power = getBotPower(bot, mentorBonuses);
         const tColor = theme.typeColor[m.type];
-        const isOpen = expandedId === bot.id;
-        const cap = getDiskCapacity(bot);
 
         return (
-          <div key={bot.id} style={{
+          <button key={bot.id} style={{
             ...cardStyle,
-            borderColor: isOpen ? tColor : theme.color.border,
             position: 'relative',
-            background: isOpen
-              ? `linear-gradient(180deg, ${tColor}15 0%, ${theme.color.bgRaised} 60%)`
-              : theme.color.bgRaised,
-          }}>
-            {isOpen && (
-              <>
-                <span style={cornerStyle({ top: true, left: true, color: tColor })} />
-                <span style={cornerStyle({ top: true, right: true, color: tColor })} />
-                <span style={cornerStyle({ bottom: true, left: true, color: tColor })} />
-                <span style={cornerStyle({ bottom: true, right: true, color: tColor })} />
-              </>
-            )}
-            <button style={{ ...cardHeadStyle, display: 'grid', gridTemplateColumns: '48px 1fr auto', gap: 10, alignItems: 'center' }}
-              onClick={() => setExpandedId(isOpen ? null : bot.id)}>
-              <MechaMini modelId={bot.modelId} size="sm" />
-              <div style={{ minWidth: 0 }}>
-                <div style={nameStyle}>
-                  {getBotFullName(bot)}
-                  <span style={{ ...chipStyle, color: tColor, borderColor: tColor }}>{t.name}</span>
-                </div>
-                <div style={subStyle}>LV {bot.level} · PWR {power}</div>
+            background: theme.color.bgRaised,
+            borderColor: theme.color.border,
+            width: '100%',
+            textAlign: 'left',
+            cursor: 'pointer',
+            display: 'grid',
+            gridTemplateColumns: '48px 1fr auto',
+            gap: 10,
+            alignItems: 'center',
+            padding: theme.space.md,
+          }}
+            onClick={() => setCardBotId(bot.id)}>
+            <MechaMini modelId={bot.modelId} size="sm" />
+            <div style={{ minWidth: 0 }}>
+              <div style={nameStyle}>
+                {getBotFullName(bot)}
+                <span style={{ ...chipStyle, color: tColor, borderColor: tColor }}>{t.name}</span>
               </div>
-              <div style={chevronStyle}>{isOpen ? '−' : '+'}</div>
-            </button>
-
-            {isOpen && (
-              <div style={detailStyle}>
-                <div style={statsRowStyle}>
-                  <div>ATK <strong>{stats.attack}</strong></div>
-                  <div>DEF <strong>{stats.defense}</strong></div>
-                  <div>SPD <strong>{stats.speed}</strong></div>
-                  <div>INT <strong>{stats.intelligence}</strong></div>
-                </div>
-                <div style={metaRowStyle}>
-                  <div>HP {bot.maxHp}</div>
-                  <div>W: {bot.wins} L: {bot.losses}</div>
-                  <div>Disks {bot.disksUsed}/{cap}</div>
-                </div>
-                <div style={equipRowStyle}>
-                  <span style={equipLabelStyle}>WEAPON</span>
-                  <span>{bot.weapon ? WEAPONS[bot.weapon]?.name : '—'}</span>
-                </div>
-                <div style={equipRowStyle}>
-                  <span style={equipLabelStyle}>ARMOR</span>
-                  <span>{bot.armor ? ARMORS[bot.armor]?.name : '—'}</span>
-                </div>
-                <BotMoves bot={bot} />
-                <Button full variant="secondary" small style={{ marginTop: theme.space.md }}
-                  onClick={() => dispatch({ type: 'OPEN_ASSIGN', botId: bot.id })}>
-                  ASSIGN ITEMS →
-                </Button>
-                <PromoteToCrewButton botId={bot.id} botName={bot.firstName} />
-              </div>
-            )}
-          </div>
+              <div style={subStyle}>LV {bot.level} · PWR {power}</div>
+            </div>
+            <div style={{ ...chevronStyle, color: tColor }}>→</div>
+          </button>
         );
       })}
+      {cardBot && (
+        <MechaCard
+          mode="roster"
+          modelId={cardBot.modelId}
+          bot={cardBot}
+          crew={state.crew}
+          onClose={() => setCardBotId(null)}
+          actions={
+            <>
+              <Button full onClick={() => {
+                setCardBotId(null);
+                dispatch({ type: 'OPEN_ASSIGN', botId: cardBot.id });
+              }}>
+                ASSIGN ITEMS →
+              </Button>
+              <PromoteToCrewButton botId={cardBot.id} botName={cardBot.firstName} />
+            </>
+          }
+        />
+      )}
     </>
   );
 }
@@ -239,7 +225,11 @@ function CrewTab() {
 
 function CollectionTab() {
   const { state } = useGame();
+  const [cardModelId, setCardModelId] = useState<string | null>(null);
   const sorted = [...MODEL_LIST].sort((a, b) => a.dexNo - b.dexNo);
+
+  const cardModel = cardModelId ? MODELS[cardModelId] : null;
+  const cardOwned = cardModel ? state.discovered.has(cardModel.id) : false;
 
   return (
     <div style={dexListStyle}>
@@ -247,14 +237,20 @@ function CollectionTab() {
         const owned = state.discovered.has(m.id);
         const tColor = theme.typeColor[m.type];
         return (
-          <div key={m.id} style={{
-            ...dexRowStyle,
-            display: 'grid',
-            gridTemplateColumns: '44px 44px 1fr',
-            gap: 10,
-            alignItems: 'center',
-            ...(owned ? { borderColor: tColor + '60' } : { opacity: 0.45 }),
-          }}>
+          <button key={m.id}
+            disabled={!owned}
+            onClick={() => owned && setCardModelId(m.id)}
+            style={{
+              ...dexRowStyle,
+              display: 'grid',
+              gridTemplateColumns: '44px 44px 1fr',
+              gap: 10,
+              alignItems: 'center',
+              width: '100%',
+              textAlign: 'left',
+              cursor: owned ? 'pointer' : 'not-allowed',
+              ...(owned ? { borderColor: tColor + '60' } : { opacity: 0.45 }),
+            }}>
             <div style={dexNoStyle}>#{String(m.dexNo).padStart(3, '0')}</div>
             {owned ? <MechaMini modelId={m.id} size="sm" /> : <div style={lockedPortraitStyle} />}
             <div style={dexBodyStyle}>
@@ -274,9 +270,17 @@ function CollectionTab() {
                 </>
               )}
             </div>
-          </div>
+          </button>
         );
       })}
+      {cardModel && (
+        <MechaCard
+          mode="dex"
+          modelId={cardModel.id}
+          owned={cardOwned}
+          onClose={() => setCardModelId(null)}
+        />
+      )}
     </div>
   );
 }
