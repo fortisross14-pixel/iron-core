@@ -60,9 +60,10 @@ export function MechaMini({ modelId, size = 'sm', bare = false, outline }: MiniP
     height: px,
     position: 'relative',
     borderRadius: '50%',
-    background: `radial-gradient(circle at 35% 30%, ${tColor}30 0%, ${theme.color.bgSunken} 75%)`,
-    border: bare ? `1px solid ${tColor}80` : `2px solid ${tColor}`,
-    boxShadow: bare ? 'none' : `0 0 8px ${tColor}40, inset 0 0 12px ${tColor}20`,
+    background: `radial-gradient(circle at 35% 24%, ${tColor}44 0%, ${theme.color.bgSunken} 72%), linear-gradient(135deg, ${theme.color.grime}, ${theme.color.bgSunken})`,
+    border: bare ? `1px solid ${tColor}90` : `2px solid ${theme.color.ink}`,
+    outline: bare ? undefined : `1px solid ${tColor}`,
+    boxShadow: bare ? 'none' : `0 0 10px ${tColor}36, inset 0 0 0 2px rgba(255,255,255,0.05), inset 0 -10px 18px rgba(0,0,0,0.55)`,
     flexShrink: 0,
     overflow: 'hidden',
   };
@@ -71,11 +72,11 @@ export function MechaMini({ modelId, size = 'sm', bare = false, outline }: MiniP
   const showImg = !imgFailed;
 
   return (
-    <div style={wrapStyle} title={model.surname}>
+    <div className="ic-worn-surface" style={wrapStyle} title={model.surname}>
       {showImg && (
         <img src={imgSrc}
           onError={() => setImgFailed(true)}
-          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', borderRadius: '50%' }}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', borderRadius: '50%', filter: 'contrast(1.08) saturate(1.12)' }}
           alt={model.surname} />
       )}
       {imgFailed && (
@@ -134,9 +135,10 @@ export function MechaFull({ modelId, size = 'md' }: FullProps) {
     width: w,
     height: h,
     position: 'relative',
-    background: `linear-gradient(160deg, ${tColor}30 0%, ${theme.color.bgSunken} 50%, ${tColor}10 100%)`,
-    border: `1px solid ${tColor}`,
-    boxShadow: `0 0 14px ${tColor}40`,
+    background: `linear-gradient(160deg, rgba(255,255,255,0.08) 0%, transparent 18%), radial-gradient(circle at 50% 18%, ${tColor}38 0%, transparent 45%), linear-gradient(180deg, ${theme.color.bgRaised} 0%, ${theme.color.bgSunken} 100%)`,
+    border: `2px solid ${theme.color.ink}`,
+    outline: `1px solid ${tColor}`,
+    boxShadow: `0 0 18px ${tColor}34, inset 0 0 0 1px rgba(255,255,255,0.045), inset 0 -18px 38px rgba(0,0,0,0.48)`,
     overflow: 'hidden',
     flexShrink: 0,
   };
@@ -145,11 +147,11 @@ export function MechaFull({ modelId, size = 'md' }: FullProps) {
   const showImg = !imgFailed;
 
   return (
-    <div style={wrapStyle}>
+    <div className="ic-worn-surface" style={wrapStyle}>
       {showImg && (
         <img src={imgSrc}
           onError={() => setImgFailed(true)}
-          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', filter: 'contrast(1.08) saturate(1.15)' }}
           alt={model.surname} />
       )}
       {imgFailed && (
@@ -190,6 +192,19 @@ export function MechaFull({ modelId, size = 'md' }: FullProps) {
           </div>
         </div>
       )}
+
+      <span style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: 46,
+        height: 7,
+        color: tColor,
+        opacity: 0.75,
+        background: 'repeating-linear-gradient(135deg, currentColor 0 7px, transparent 7px 12px)',
+        pointerEvents: 'none',
+        zIndex: 3,
+      }} />
 
       {/* Corner brackets */}
       <span style={cornerStyle({ top: true, left: true, color: tColor })} />

@@ -51,9 +51,16 @@ export function Frame({
 
   const baseStyle: CSSProperties = {
     position: 'relative',
+    overflow: 'hidden',
     padding: pad,
-    background: selected ? `${cDeep}b0` : theme.color.bgRaised,
-    boxShadow: glow ? `0 0 14px ${c}40, inset 0 0 0 1px ${selected ? c : 'transparent'}` : undefined,
+    background: selected
+      ? `linear-gradient(180deg, ${cDeep}d0 0%, ${theme.color.bgRaised} 100%)`
+      : `linear-gradient(180deg, ${theme.color.bgRaised} 0%, ${theme.color.bgSunken} 100%)`,
+    border: `1px solid ${theme.color.ink}`,
+    outline: selected ? `1px solid ${c}` : `1px solid ${cDim}80`,
+    boxShadow: glow
+      ? `0 0 18px ${c}38, inset 0 0 0 1px rgba(255,255,255,0.04), inset 0 -18px 36px rgba(0,0,0,0.42)`
+      : `inset 0 0 0 1px rgba(255,255,255,0.03), inset 0 -12px 28px rgba(0,0,0,0.34)`,
     cursor: onClick ? 'pointer' : undefined,
     opacity: disabled ? 0.4 : 1,
     pointerEvents: disabled ? 'none' : undefined,
@@ -62,9 +69,9 @@ export function Frame({
 
   if (variant === 'corner') {
     return (
-      <div style={baseStyle} onClick={onClick}>
+      <div className="ic-worn-surface" style={baseStyle} onClick={onClick}>
         <CornerMarks color={c} />
-        {children}
+        <div className="ic-content-above-grime">{children}</div>
       </div>
     );
   }
@@ -73,25 +80,26 @@ export function Frame({
     // Cut-corner border via clip-path
     const clip = 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)';
     return (
-      <div style={{ ...baseStyle, clipPath: clip, border: `1px solid ${cDim}` }} onClick={onClick}>
+      <div className="ic-worn-surface" style={{ ...baseStyle, clipPath: clip, border: `2px solid ${theme.color.ink}`, outline: `1px solid ${selected ? c : cDim}` }} onClick={onClick}>
         <CornerMarks color={c} />
-        {children}
+        <div style={{ position: 'absolute', top: 0, right: 0, width: 54, height: 8, color: c, opacity: 0.7, background: 'repeating-linear-gradient(135deg, currentColor 0 7px, transparent 7px 12px)', pointerEvents: 'none', zIndex: 3 }} />
+        <div className="ic-content-above-grime">{children}</div>
       </div>
     );
   }
 
   if (variant === 'band') {
     return (
-      <div style={{ ...baseStyle, borderTop: `2px solid ${c}`, borderBottom: `1px solid ${cDim}` }} onClick={onClick}>
-        {children}
+      <div className="ic-worn-surface" style={{ ...baseStyle, borderTop: `3px solid ${c}`, borderBottom: `1px solid ${cDim}` }} onClick={onClick}>
+        <div className="ic-content-above-grime">{children}</div>
       </div>
     );
   }
 
   // edge
   return (
-    <div style={{ ...baseStyle, borderTop: `1px solid ${c}`, borderBottom: `1px solid ${cDim}40` }} onClick={onClick}>
-      {children}
+    <div className="ic-worn-surface" style={{ ...baseStyle, borderTop: `2px solid ${c}`, borderBottom: `1px solid ${cDim}40` }} onClick={onClick}>
+      <div className="ic-content-above-grime">{children}</div>
     </div>
   );
 }

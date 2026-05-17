@@ -72,15 +72,17 @@ export function Button({
 
   const base: CSSProperties = {
     position: 'relative',
-    background: disabled ? theme.color.panel : c.bg,
+    background: disabled ? theme.color.panel : `linear-gradient(180deg, rgba(255,255,255,0.16), transparent 26%), ${c.bg}`,
     color: disabled ? theme.color.textVeryDim : c.color,
     border: disabled ? `1px solid ${theme.color.border}` : c.border,
+    outline: `2px solid ${theme.color.ink}`,
+    overflow: 'hidden',
     padding: pad,
     fontFamily: theme.font.display,
     fontSize: fs,
     letterSpacing: theme.letter.wider,
     width: full ? '100%' : undefined,
-    boxShadow: !disabled && c.glow !== 'transparent' ? `0 0 14px ${c.glow}` : 'none',
+    boxShadow: !disabled && c.glow !== 'transparent' ? `0 0 14px ${c.glow}, inset 0 -10px 18px rgba(0,0,0,0.22)` : 'inset 0 -10px 18px rgba(0,0,0,0.22)',
     cursor: disabled ? 'not-allowed' : 'pointer',
     transition: 'transform 0.05s, box-shadow 0.15s',
     clipPath: clip,
@@ -88,8 +90,8 @@ export function Button({
   };
 
   return (
-    <button onClick={onClick} disabled={disabled} style={{ ...base, ...style }}>
-      {children}
+    <button className="ic-worn-surface" onClick={onClick} disabled={disabled} style={{ ...base, ...style }}>
+      <span style={{ position: 'relative', zIndex: 3 }}>{children}</span>
     </button>
   );
 }

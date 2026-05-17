@@ -42,8 +42,10 @@ export function BottomNav() {
     width: '100%',
     maxWidth: theme.maxWidth,
     display: 'flex',
-    background: `linear-gradient(180deg, ${theme.color.bgRaised} 0%, ${palette.c5}80 100%)`,
-    borderTop: `1px solid ${palette.c1}80`,
+    background: `linear-gradient(180deg, rgba(255,255,255,0.035) 0%, ${theme.color.bgRaised} 18%, ${palette.c5}95 100%)`,
+    borderTop: `2px solid ${theme.color.ink}`,
+    outline: `1px solid ${palette.c1}80`,
+    boxShadow: `0 -10px 30px rgba(0,0,0,0.72), 0 0 18px ${palette.c1}18`,
     zIndex: theme.z.tabs,
   };
 
@@ -58,11 +60,11 @@ export function BottomNav() {
           alignItems: 'center',
           gap: 2,
           padding: '10px 4px 8px',
-          background: active ? `${palette.c5}80` : 'transparent',
+          background: active ? `linear-gradient(180deg, ${palette.c1}22 0%, ${palette.c5}95 100%)` : 'transparent',
           border: 'none',
           color: active ? palette.c1 : palette.c4,
           cursor: 'pointer',
-          borderTop: active ? `2px solid ${palette.c1}` : `2px solid transparent`,
+          borderTop: active ? `3px solid ${palette.c1}` : `3px solid transparent`,
           position: 'relative',
           fontFamily: theme.font.mono,
           textShadow: active ? `0 0 8px ${palette.c1}80` : 'none',
@@ -70,6 +72,7 @@ export function BottomNav() {
 
         return (
           <button key={t.scene} onClick={() => dispatch({ type: 'GO_SCENE', scene: t.scene })} style={tabBtnStyle}>
+            {active && <span style={{ position: 'absolute', top: 2, right: 8, width: 28, height: 4, color: palette.c1, opacity: 0.75, background: 'repeating-linear-gradient(135deg, currentColor 0 5px, transparent 5px 9px)', pointerEvents: 'none' }} />}
             <span style={{ fontSize: 16, fontFamily: theme.font.display }}>{t.icon}</span>
             <span style={{ fontFamily: theme.font.mono, fontSize: theme.size.micro, letterSpacing: theme.letter.wide }}>
               {t.label}
