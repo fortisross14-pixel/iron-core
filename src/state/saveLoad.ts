@@ -17,7 +17,15 @@ const SAVE_KEY = 'iron-core:save:main';
 const SAVE_VERSION = 1;
 
 /** Top-level Set-keyed fields in GameState that need array serialization. */
-const SET_FIELDS = ['defeatedTrainerIds', 'encounteredTrainerIds', 'discovered', 'storyFlags'] as const;
+const SET_FIELDS = [
+  'defeatedTrainerIds',
+  'encounteredTrainerIds',
+  'discovered',
+  'storyFlags',
+  'unlockedCities',
+  'unlockedTournaments',
+  'unlockedFeatures',
+] as const;
 
 interface SavedShape {
   version: number;
@@ -47,6 +55,8 @@ function deserialize(saved: any): GameState {
   // Future-proof: ensure all required fields exist (older saves might miss new ones)
   if (!out.batteryInv) out.batteryInv = {};
   if (typeof out.playerName !== 'string') out.playerName = '';
+  // Hometown must always be unlocked, even if a corrupt save lost it
+  if (!out.unlockedCities.has('ironhaven')) out.unlockedCities.add('ironhaven');
   return out as GameState;
 }
 
