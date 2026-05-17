@@ -293,89 +293,194 @@ function cornerBR(color: string, size = 8): CSSProperties {
 }
 
 // ============================================================
-// STYLES
+// STYLES — worn arena-map / city-hub pass
 // ============================================================
 
 const titleStyle = (p: { c1: string }): CSSProperties => ({
   fontFamily: theme.font.display,
-  fontSize: theme.size.h1,
+  fontSize: theme.size.h1 + 4,
   letterSpacing: theme.letter.wider,
-  color: '#fff',
-  textShadow: `0 0 14px ${p.c1}60`,
+  color: '#fff7d5',
+  lineHeight: 0.92,
+  textTransform: 'uppercase',
+  textShadow: `0 0 18px ${p.c1}75, 3px 3px 0 ${theme.color.ink}`,
 });
 const subtitleStyle = (p: { c3: string }): CSSProperties => ({
-  fontSize: theme.size.tiny, color: p.c3,
-  marginBottom: theme.space.lg, lineHeight: 1.5, marginTop: 2,
-  fontFamily: theme.font.mono, letterSpacing: theme.letter.tight,
+  fontSize: theme.size.tiny,
+  color: p.c3,
+  marginBottom: theme.space.lg,
+  lineHeight: 1.55,
+  marginTop: 4,
+  fontFamily: theme.font.mono,
+  letterSpacing: theme.letter.normal,
+  textTransform: 'uppercase',
 });
 
-const cityListStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 8 };
-const cityRowStyle: CSSProperties = {
-  display: 'grid', gridTemplateColumns: '36px 1fr auto', gap: 12, alignItems: 'center',
-  padding: '14px 14px',
-  textAlign: 'left', color: theme.color.text, font: 'inherit',
-  width: '100%', position: 'relative',
+const cityListStyle: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 10,
+  padding: 8,
+  background:
+    `linear-gradient(180deg, rgba(255,255,255,0.035), transparent 22%),
+     radial-gradient(circle at 14% 0%, rgba(255,184,0,0.12), transparent 32%),
+     ${theme.color.bgSunken}`,
+  border: `1px solid ${theme.color.borderStrong}`,
+  boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.035), inset 0 -28px 45px rgba(0,0,0,0.45)',
 };
-const cityIconStyle: CSSProperties = { fontSize: 28, textAlign: 'center' };
-const cityBodyStyle: CSSProperties = { minWidth: 0 };
+const cityRowStyle: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '42px 1fr auto',
+  gap: 12,
+  alignItems: 'center',
+  padding: '15px 14px 15px 12px',
+  textAlign: 'left',
+  color: theme.color.text,
+  font: 'inherit',
+  width: '100%',
+  position: 'relative',
+  overflow: 'hidden',
+  clipPath: 'polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px))',
+  boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.035), 0 6px 14px rgba(0,0,0,0.35)',
+};
+const cityIconStyle: CSSProperties = {
+  fontSize: 28,
+  textAlign: 'center',
+  background: 'rgba(0,0,0,0.34)',
+  border: `1px solid ${theme.color.borderStrong}`,
+  minHeight: 40,
+  display: 'grid',
+  placeItems: 'center',
+};
+const cityBodyStyle: CSSProperties = { minWidth: 0, position: 'relative', zIndex: 2 };
 const cityNameStyle: CSSProperties = {
-  fontFamily: theme.font.display, fontSize: theme.size.h3,
-  letterSpacing: theme.letter.wide, color: '#fff',
-  display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap',
+  fontFamily: theme.font.display,
+  fontSize: theme.size.h3 + 2,
+  letterSpacing: theme.letter.wide,
+  color: '#fff',
+  display: 'flex',
+  alignItems: 'center',
+  gap: 7,
+  flexWrap: 'wrap',
+  textTransform: 'uppercase',
+  textShadow: `2px 2px 0 ${theme.color.ink}`,
 };
 const cityTierBadgeStyle: CSSProperties = {
-  fontFamily: theme.font.mono, fontSize: theme.size.micro,
+  fontFamily: theme.font.mono,
+  fontSize: theme.size.micro,
   letterSpacing: theme.letter.wide,
-  padding: '2px 6px', border: '1px solid',
+  padding: '3px 7px',
+  border: '1px solid',
+  background: 'rgba(0,0,0,0.44)',
+  boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.035)',
+  textTransform: 'uppercase',
 };
 const cityDescStyle: CSSProperties = {
-  fontSize: theme.size.tiny, color: theme.color.textDim, marginTop: 2,
+  fontSize: theme.size.tiny,
+  color: theme.color.textMuted,
+  marginTop: 4,
   fontFamily: theme.font.body,
+  lineHeight: 1.35,
 };
 const youAreHereStyle: CSSProperties = {
-  fontFamily: theme.font.mono, fontSize: theme.size.micro,
+  fontFamily: theme.font.mono,
+  fontSize: theme.size.micro,
   letterSpacing: theme.letter.wide,
-  textAlign: 'right', flexShrink: 0,
+  textAlign: 'right',
+  flexShrink: 0,
   animation: 'ic-flicker 5s infinite',
+  padding: '4px 6px',
+  background: 'rgba(0,0,0,0.42)',
+  borderLeft: `3px solid currentColor`,
 };
 
 const backStyle = (p: { c3: string }): CSSProperties => ({
-  background: 'transparent', border: 'none', color: p.c3,
-  fontFamily: theme.font.mono, fontSize: theme.size.tiny,
+  background: 'rgba(0,0,0,0.28)',
+  border: `1px solid ${p.c3}55`,
+  color: p.c3,
+  fontFamily: theme.font.mono,
+  fontSize: theme.size.tiny,
   letterSpacing: theme.letter.wide,
-  cursor: 'pointer', padding: 0, marginBottom: theme.space.md,
+  cursor: 'pointer',
+  padding: '7px 9px',
+  marginBottom: theme.space.md,
+  textTransform: 'uppercase',
 });
 const cityHeaderStyle: CSSProperties = {
-  display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end',
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'flex-end',
   marginBottom: theme.space.sm,
+  padding: '4px 0 2px',
 };
-const listStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 6 };
+const listStyle: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 8,
+  padding: 8,
+  background:
+    `linear-gradient(180deg, rgba(255,255,255,0.03), transparent 20%),
+     linear-gradient(90deg, rgba(255,184,0,0.04), transparent 42%),
+     ${theme.color.bgSunken}`,
+  border: `1px solid ${theme.color.borderStrong}`,
+};
 const rowStyle: CSSProperties = {
-  display: 'grid', gridTemplateColumns: '28px 1fr auto', gap: 10,
-  alignItems: 'center', padding: '12px 14px',
-  textAlign: 'left', color: theme.color.text, font: 'inherit',
-  width: '100%', position: 'relative',
+  display: 'grid',
+  gridTemplateColumns: '34px 1fr auto',
+  gap: 11,
+  alignItems: 'center',
+  padding: '13px 12px',
+  textAlign: 'left',
+  color: theme.color.text,
+  font: 'inherit',
+  width: '100%',
+  position: 'relative',
+  overflow: 'hidden',
+  clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))',
+  boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.035), 0 5px 12px rgba(0,0,0,0.32)',
 };
-const iconStyle: CSSProperties = { fontSize: 18, textAlign: 'center' };
-const bodyStyle: CSSProperties = { minWidth: 0 };
+const iconStyle: CSSProperties = {
+  fontSize: 18,
+  textAlign: 'center',
+  background: 'rgba(0,0,0,0.35)',
+  border: `1px solid ${theme.color.border}`,
+  width: 30,
+  height: 30,
+  display: 'grid',
+  placeItems: 'center',
+};
+const bodyStyle: CSSProperties = { minWidth: 0, position: 'relative', zIndex: 2 };
 const nameStyle: CSSProperties = {
-  fontFamily: theme.font.display, fontSize: theme.size.body,
-  letterSpacing: theme.letter.tight, color: '#fff',
+  fontFamily: theme.font.display,
+  fontSize: theme.size.body + 2,
+  letterSpacing: theme.letter.normal,
+  color: '#fff',
+  textTransform: 'uppercase',
+  textShadow: `2px 2px 0 ${theme.color.ink}`,
 };
 const descStyle: CSSProperties = {
-  fontSize: theme.size.tiny, color: theme.color.textDim, marginTop: 2,
+  fontSize: theme.size.tiny,
+  color: theme.color.textDim,
+  marginTop: 3,
   fontFamily: theme.font.body,
+  lineHeight: 1.35,
 };
 const tagStyle: CSSProperties = {
-  fontFamily: theme.font.mono, fontSize: 9,
+  fontFamily: theme.font.mono,
+  fontSize: 9,
   letterSpacing: theme.letter.wide,
-  padding: '3px 6px', border: '1px solid',
-  flexShrink: 0, alignSelf: 'center',
+  padding: '4px 6px',
+  border: '1px solid',
+  flexShrink: 0,
+  alignSelf: 'center',
+  background: 'rgba(0,0,0,0.42)',
+  textTransform: 'uppercase',
 };
 
 const travelWrapStyle: CSSProperties = {
   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
   minHeight: '60vh', gap: 16,
+  background: `radial-gradient(circle at center, ${NEUTRAL_PALETTE.c5} 0%, transparent 60%)`,
 };
 const travelSpinnerStyle: CSSProperties = {
   fontSize: 60, color: NEUTRAL_PALETTE.c1,
@@ -385,10 +490,12 @@ const travelSpinnerStyle: CSSProperties = {
 const travelTextStyle: CSSProperties = {
   fontFamily: theme.font.mono, fontSize: theme.size.tiny,
   color: NEUTRAL_PALETTE.c3, letterSpacing: theme.letter.wide,
+  textTransform: 'uppercase',
 };
 const travelCityStyle: CSSProperties = {
-  fontFamily: theme.font.display, fontSize: theme.size.h2,
+  fontFamily: theme.font.display, fontSize: theme.size.h2 + 8,
   letterSpacing: theme.letter.wider, color: '#fff',
+  textShadow: '3px 3px 0 #000',
 };
 const travelDotsStyle: CSSProperties = {
   fontFamily: theme.font.mono, fontSize: theme.size.h1,

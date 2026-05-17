@@ -2,6 +2,7 @@ import { CSSProperties } from 'react';
 import { useGame } from '../../state/GameStore';
 import { Button } from '../../components/Button';
 import { theme } from '../../styles/theme';
+import { xpRewardForTrainer } from '../../game/fame';
 import type { PendingBattle } from '../../state/types';
 
 export function GateLocationView({ locationId }: { locationId: string }) {
@@ -20,7 +21,7 @@ export function GateLocationView({ locationId }: { locationId: string }) {
       forceModelId: 'scrap_grunt',
       forceFirstName: 'Krait',
       prize: 0,
-      xpReward: 60,
+      xpReward: xpRewardForTrainer('krait'),
       // first fight is designed to be a loss (he's tougher than you).
       // either way, after the fight: dialog krait_lost → unlock junkyard.
       // we only fire krait_lost on actual loss; on win, skip directly to rematch.
@@ -43,7 +44,7 @@ export function GateLocationView({ locationId }: { locationId: string }) {
       forceModelId: 'scrap_grunt',
       forceFirstName: 'Krait',
       prize: 300,
-      xpReward: 120,
+      xpReward: xpRewardForTrainer('krait') * 2,  // rematch grants double for the second harder fight
       onWinSceneId: 'krait_won',
       onWinFlags: ['krait_rematch_won'],
       unlockCityId: 'voltspire',

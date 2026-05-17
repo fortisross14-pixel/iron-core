@@ -76,6 +76,8 @@ export function MechaCard(props: Props) {
   let armor: string | null = null;
   let signatureAttack: typeof ATTACKS[string] | null = null;
   let nameLine = model.surname;
+  let curXp: number | null = null;
+  let xpToNext: number | null = null;
 
   if (props.mode === 'roster') {
     const bot = props.bot;
@@ -85,6 +87,8 @@ export function MechaCard(props: Props) {
     curHp = bot.maxHp; // persistent bot doesn't track current HP outside combat
     maxBat = maxBatteryOf(bot);
     curBat = maxBat;
+    curXp = bot.xp;
+    xpToNext = bot.level >= 30 ? 0 : bot.xpToNext;
     const f = getBotStats(bot, calcMentorBonuses(props.crew));
     attack = f.attack;
     defense = f.defense;
@@ -145,6 +149,19 @@ export function MechaCard(props: Props) {
                 <div style={levelBoxStyle(tColor)}>
                   <span style={levelLabelStyle}>LV</span>
                   <span style={levelValStyle}>{displayLevel}</span>
+                </div>
+              )}
+              {curXp !== null && xpToNext !== null && xpToNext > 0 && (
+                <div style={xpWrapStyle}>
+                  <div style={xpBarStyle}>
+                    <div style={{ ...xpFillStyle, width: `${Math.min(100, (curXp / xpToNext) * 100)}%`, background: tColor }} />
+                  </div>
+                  <div style={xpTextStyle}>XP {curXp}/{xpToNext}</div>
+                </div>
+              )}
+              {curXp !== null && xpToNext === 0 && (
+                <div style={xpWrapStyle}>
+                  <div style={xpTextStyle}>LV MAX</div>
                 </div>
               )}
               {curHp !== null && (
@@ -472,6 +489,36 @@ const batValStyle: CSSProperties = {
   fontFamily: theme.font.mono,
   fontSize: 11,
   color: '#fff',
+};
+
+const xpWrapStyle: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-end',
+  gap: 2,
+  padding: '3px 6px',
+  background: 'rgba(0,0,0,0.7)',
+  minWidth: 100,
+};
+
+const xpBarStyle: CSSProperties = {
+  width: 90,
+  height: 4,
+  background: 'rgba(255,255,255,0.12)',
+  overflow: 'hidden',
+};
+
+const xpFillStyle: CSSProperties = {
+  height: '100%',
+  transition: 'width 0.4s',
+};
+
+const xpTextStyle: CSSProperties = {
+  fontFamily: theme.font.mono,
+  fontSize: 8,
+  color: theme.color.textMuted,
+  letterSpacing: 1,
+  lineHeight: 1,
 };
 
 const statsBoxStyle = (tColor: string): CSSProperties => ({

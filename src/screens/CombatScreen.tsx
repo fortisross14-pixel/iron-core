@@ -311,22 +311,29 @@ const appStyle: CSSProperties = {
   flexDirection: 'column',
   maxWidth: theme.maxWidth,
   margin: '0 auto',
+  position: 'relative',
+  overflow: 'hidden',
 };
 
 const headerStyle: CSSProperties = {
-  padding: '10px 14px',
+  padding: '10px 14px 9px',
   borderBottom: `1px solid ${theme.color.accent}4d`,
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
   background: theme.color.bgRaised,
+  boxShadow: 'inset 0 -1px 0 rgba(255,255,255,0.04), 0 8px 22px rgba(0,0,0,0.45)',
+  position: 'relative',
+  zIndex: 2,
 };
 
 const titleStyle: CSSProperties = {
   fontFamily: theme.font.display,
-  fontSize: 14,
+  fontSize: 17,
   letterSpacing: theme.letter.wide,
-  color: '#fff',
+  color: '#fff7d5',
+  textTransform: 'uppercase',
+  textShadow: `2px 2px 0 ${theme.color.ink}`,
 };
 
 const turnStyle: CSSProperties = {
@@ -335,30 +342,51 @@ const turnStyle: CSSProperties = {
   color: theme.color.accent,
   letterSpacing: theme.letter.normal,
   animation: 'ic-pulse 1.5s infinite',
+  padding: '4px 7px',
+  background: 'rgba(0,0,0,0.42)',
+  border: '1px solid currentColor',
 };
 
-const partyStyle: CSSProperties = { padding: '8px 14px' };
+const partyStyle: CSSProperties = {
+  padding: '9px 14px',
+  position: 'relative',
+  zIndex: 1,
+};
 
 const partyLabelStyle: CSSProperties = {
   fontFamily: theme.font.mono,
   fontSize: theme.size.micro,
-  color: theme.color.textDim,
+  color: theme.color.textMuted,
   letterSpacing: theme.letter.wide,
-  marginBottom: 4,
+  marginBottom: 6,
+  textTransform: 'uppercase',
+  display: 'inline-block',
+  padding: '3px 7px',
+  background: 'rgba(0,0,0,0.48)',
+  borderLeft: `3px solid ${theme.color.accent}`,
 };
 
 const partyGridStyle: CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))',
-  gap: 6,
+  gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))',
+  gap: 7,
+  padding: 7,
+  background:
+    `linear-gradient(180deg, rgba(255,255,255,0.035), transparent 35%),
+     repeating-linear-gradient(135deg, rgba(255,184,0,0.035) 0 7px, transparent 7px 15px),
+     ${theme.color.bgSunken}`,
+  border: `1px solid ${theme.color.borderStrong}`,
+  boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.035), inset 0 -22px 44px rgba(0,0,0,0.42)',
 };
 
 const messageContainerStyle: CSSProperties = {
-  padding: '12px 14px',
-  minHeight: 50,
+  padding: '10px 14px',
+  minHeight: 56,
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
+  position: 'relative',
+  zIndex: 2,
 };
 
 const messageStyle: CSSProperties = {
@@ -366,20 +394,33 @@ const messageStyle: CSSProperties = {
   fontSize: theme.size.body,
   letterSpacing: theme.letter.tight,
   textAlign: 'center',
-  fontWeight: 600,
-  padding: '8px 14px',
-  background: theme.color.bgSunken,
-  border: `1px solid ${theme.color.border}`,
-  borderRadius: 2,
+  fontWeight: 800,
+  padding: '10px 14px',
+  background:
+    `linear-gradient(90deg, transparent, rgba(0,0,0,0.78) 12%, rgba(0,0,0,0.82) 88%, transparent),
+     ${theme.color.bgSunken}`,
+  borderTop: `1px solid ${theme.color.borderStrong}`,
+  borderBottom: `1px solid ${theme.color.borderStrong}`,
+  borderRadius: 0,
   width: '100%',
+  textTransform: 'uppercase',
+  textShadow: '0 0 10px rgba(255,255,255,0.18)',
+  boxShadow: '0 8px 26px rgba(0,0,0,0.42)',
 };
 
 const panelStyle: CSSProperties = {
   margin: '8px 14px 14px',
-  padding: 10,
-  background: theme.color.bgRaised,
-  border: `1px solid ${theme.color.accent}4d`,
-  minHeight: 110,
+  padding: 11,
+  background:
+    `linear-gradient(180deg, rgba(255,255,255,0.045), transparent 28%),
+     radial-gradient(circle at 0% 0%, rgba(255,184,0,0.10), transparent 34%),
+     ${theme.color.bgRaised}`,
+  border: `1px solid ${theme.color.accent}66`,
+  minHeight: 120,
+  position: 'relative',
+  zIndex: 3,
+  clipPath: 'polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px))',
+  boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.04), 0 10px 28px rgba(0,0,0,0.48)',
 };
 
 const waitingStyle: CSSProperties = {
@@ -387,11 +428,12 @@ const waitingStyle: CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   gap: 10,
-  padding: 14,
+  padding: 15,
   color: theme.color.textMuted,
   fontFamily: theme.font.mono,
   fontSize: theme.size.small,
   letterSpacing: theme.letter.normal,
+  textTransform: 'uppercase',
 };
 
 const spinnerStyle: CSSProperties = {
@@ -403,24 +445,32 @@ const spinnerStyle: CSSProperties = {
 const mainMenuStyle: CSSProperties = {
   display: 'grid',
   gridTemplateColumns: '1fr 1fr 1fr',
-  gap: 6,
+  gap: 8,
 };
 
 const actionBtnStyle: CSSProperties = {
-  padding: '14px 6px',
-  background: theme.color.panel,
+  padding: '14px 7px 12px',
+  background:
+    `linear-gradient(180deg, rgba(255,255,255,0.045), transparent 36%),
+     linear-gradient(135deg, rgba(255,184,0,0.12), transparent 58%),
+     ${theme.color.panel}`,
   border: `1px solid ${theme.color.accent}`,
+  borderBottom: `3px solid ${theme.color.accent}`,
   color: theme.color.accent,
   display: 'flex',
   flexDirection: 'column',
-  gap: 2,
+  gap: 3,
   cursor: 'pointer',
+  clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%)',
+  boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.035), 0 5px 10px rgba(0,0,0,0.35)',
+  textTransform: 'uppercase',
 };
 
 const actionLabelStyle: CSSProperties = {
   fontFamily: theme.font.display,
-  fontSize: 13,
+  fontSize: 15,
   letterSpacing: theme.letter.wide,
+  textShadow: `2px 2px 0 ${theme.color.ink}`,
 };
 
 const actionSubStyle: CSSProperties = {
@@ -429,69 +479,80 @@ const actionSubStyle: CSSProperties = {
   color: theme.color.textMuted,
 };
 
-const subMenuStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 5 };
+const subMenuStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 7 };
 
 const backBtnStyle: CSSProperties = {
   alignSelf: 'flex-start',
-  background: 'transparent',
-  border: 'none',
+  background: 'rgba(0,0,0,0.35)',
+  border: `1px solid ${theme.color.borderStrong}`,
   color: theme.color.textMuted,
   fontFamily: theme.font.mono,
   fontSize: theme.size.micro,
   letterSpacing: theme.letter.wide,
-  padding: 0,
+  padding: '5px 8px',
   cursor: 'pointer',
+  textTransform: 'uppercase',
 };
 
 const promptStyle: CSSProperties = {
-  padding: 10,
-  background: '#1a0f0a',
+  padding: 11,
+  background:
+    `repeating-linear-gradient(135deg, rgba(255,184,0,0.08) 0 7px, transparent 7px 15px),
+     #1a0f0a`,
   border: `1px dashed ${theme.color.accent}`,
   color: theme.color.accent,
   fontFamily: theme.font.mono,
   fontSize: theme.size.small,
   textAlign: 'center',
   letterSpacing: theme.letter.normal,
+  textTransform: 'uppercase',
 };
 
 const actingStyle: CSSProperties = {
-  padding: 8,
-  background: theme.color.bgRaised,
+  padding: 9,
+  background: theme.color.bgSunken,
   borderTop: `2px solid ${theme.color.accent}`,
+  borderBottom: `1px solid ${theme.color.borderStrong}`,
   fontFamily: theme.font.mono,
   fontSize: theme.size.tiny,
   color: theme.color.textMuted,
   letterSpacing: theme.letter.wide,
   textAlign: 'center',
+  textTransform: 'uppercase',
 };
 
-const attackListStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 4 };
+const attackListStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 6 };
 
 const attackOptionStyle: CSSProperties = {
-  padding: 8,
-  background: theme.color.panel,
+  padding: 9,
+  background:
+    `linear-gradient(180deg, rgba(255,255,255,0.035), transparent 42%),
+     ${theme.color.panel}`,
   border: `1px solid ${theme.color.borderStrong}`,
+  borderLeft: `3px solid ${theme.color.accent}`,
   color: theme.color.text,
   textAlign: 'left',
   display: 'flex',
   flexDirection: 'column',
-  gap: 2,
+  gap: 3,
   cursor: 'pointer',
+  clipPath: 'polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 0 100%)',
+  boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.03)',
 };
 
-const attackHeadStyle: CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
-const attackNameStyle: CSSProperties = { fontFamily: theme.font.display, fontSize: 13, letterSpacing: theme.letter.normal };
-const attackTypeStyle: CSSProperties = { fontFamily: theme.font.mono, fontSize: 9, letterSpacing: theme.letter.normal };
-const attackStatsStyle: CSSProperties = { fontFamily: theme.font.mono, fontSize: 9, color: theme.color.info };
+const attackHeadStyle: CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 };
+const attackNameStyle: CSSProperties = { fontFamily: theme.font.display, fontSize: 14, letterSpacing: theme.letter.normal, textTransform: 'uppercase', color: '#fff' };
+const attackTypeStyle: CSSProperties = { fontFamily: theme.font.mono, fontSize: 9, letterSpacing: theme.letter.normal, padding: '2px 5px', background: 'rgba(0,0,0,0.42)', border: `1px solid ${theme.color.borderStrong}` };
+const attackStatsStyle: CSSProperties = { fontFamily: theme.font.mono, fontSize: 9, color: theme.color.info, textTransform: 'uppercase' };
 const attackDescStyle: CSSProperties = { fontSize: 10, color: theme.color.textMuted, fontStyle: 'italic' };
 const emptyBagStyle: CSSProperties = { padding: 12, textAlign: 'center', color: theme.color.textDim, fontSize: theme.size.small };
-const lockHintStyle: CSSProperties = { fontFamily: theme.font.mono, fontSize: 9, color: theme.color.danger, marginTop: 4, letterSpacing: theme.letter.tight };
+const lockHintStyle: CSSProperties = { fontFamily: theme.font.mono, fontSize: 9, color: theme.color.danger, marginTop: 4, letterSpacing: theme.letter.tight, textTransform: 'uppercase' };
 
 // ----- OTHER menu modal -----
 const otherMenuOverlayStyle: CSSProperties = {
   position: 'fixed',
   inset: 0,
-  background: 'rgba(0,0,0,0.85)',
+  background: 'rgba(0,0,0,0.88)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -500,21 +561,28 @@ const otherMenuOverlayStyle: CSSProperties = {
 };
 const otherMenuStyle: CSSProperties = {
   width: '100%',
-  maxWidth: 360,
-  background: theme.color.bgRaised,
+  maxWidth: 372,
+  background:
+    `linear-gradient(180deg, rgba(255,255,255,0.045), transparent 30%),
+     ${theme.color.bgRaised}`,
   border: `1px solid ${theme.color.accent}`,
+  borderBottom: `4px solid ${theme.color.accent}`,
   padding: 16,
   display: 'flex',
   flexDirection: 'column',
-  gap: 6,
+  gap: 7,
+  clipPath: 'polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px))',
+  boxShadow: '0 20px 70px rgba(0,0,0,0.75), inset 0 0 0 1px rgba(255,255,255,0.04)',
 };
 const otherMenuTitleStyle: CSSProperties = {
   fontFamily: theme.font.display,
-  fontSize: theme.size.h3,
+  fontSize: theme.size.h3 + 3,
   letterSpacing: theme.letter.wider,
-  color: '#fff',
+  color: '#fff7d5',
   textAlign: 'center',
   marginBottom: 6,
+  textTransform: 'uppercase',
+  textShadow: `2px 2px 0 ${theme.color.ink}`,
 };
 const otherOptStyle: CSSProperties = {
   display: 'flex',
@@ -523,7 +591,8 @@ const otherOptStyle: CSSProperties = {
   gap: 2,
   padding: '10px 12px',
   background: theme.color.bgSunken,
-  border: `1px solid ${theme.color.border}`,
+  border: `1px solid ${theme.color.borderStrong}`,
+  borderLeft: `3px solid ${theme.color.accent}`,
   color: theme.color.text,
   fontFamily: theme.font.body,
   textAlign: 'left',
@@ -531,9 +600,10 @@ const otherOptStyle: CSSProperties = {
 };
 const otherOptLabelStyle: CSSProperties = {
   fontFamily: theme.font.display,
-  fontSize: theme.size.body,
+  fontSize: theme.size.body + 1,
   letterSpacing: theme.letter.wide,
   color: '#fff',
+  textTransform: 'uppercase',
 };
 const otherOptDescStyle: CSSProperties = {
   fontSize: 10,
@@ -542,12 +612,13 @@ const otherOptDescStyle: CSSProperties = {
 };
 const otherCancelStyle: CSSProperties = {
   marginTop: 6,
-  padding: '8px',
-  background: 'transparent',
-  border: `1px solid ${theme.color.border}`,
+  padding: '9px',
+  background: 'rgba(0,0,0,0.22)',
+  border: `1px solid ${theme.color.borderStrong}`,
   color: theme.color.textMuted,
   fontFamily: theme.font.mono,
   fontSize: theme.size.tiny,
   letterSpacing: theme.letter.wide,
   cursor: 'pointer',
+  textTransform: 'uppercase',
 };

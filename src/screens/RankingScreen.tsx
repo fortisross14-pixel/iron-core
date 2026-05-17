@@ -23,7 +23,7 @@ import { Button } from '../components/Button';
 import { theme } from '../styles/theme';
 import { useCityPalette } from '../styles/cityPalette';
 import { BracketLabel, EdgeBand } from '../components/Frame';
-import { buildRankings } from '../game/fame';
+import { buildRankings, xpRewardForTrainer } from '../game/fame';
 import { TIER_ORDER, TIER_LABEL, TIER_COLOR } from '../game/tier';
 import { tierIndex, canChallengeTrainer } from '../game/tier';
 import { MODELS } from '../data/models';
@@ -53,7 +53,7 @@ export function RankingScreen() {
       forceModelId: lead.modelId,
       forceFirstName: t.firstName,
       prize: Math.round(t.fame * 0.4 + 20),
-      xpReward: 40 + lead.level * 8,
+      xpReward: xpRewardForTrainer(t.id),
     };
     setChallenging(null);
     dispatch({ type: 'QUEUE_BATTLE', battle });

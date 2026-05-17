@@ -788,6 +788,7 @@ export function reducer(state: GameState, action: Action): GameState {
       if (!d) return state;
       // money + xp + materials + loot, applied to participants
       const newMoveLearns: { botId: string; newAttackId: string }[] = [];
+      const levelUps: { botFirstName: string; newLevel: number }[] = [];
       const bots = state.bots.map(b => {
         const participated = d.participants.includes(b.id);
         if (!participated) return b;
@@ -798,6 +799,7 @@ export function reducer(state: GameState, action: Action): GameState {
           while (u.xp >= u.xpToNext && u.level < 30) {
             const newLevel = u.level + 1;
             u = { ...u, xp: u.xp - u.xpToNext, level: newLevel, xpToNext: newLevel * 100, maxHp: u.maxHp + 8 };
+            levelUps.push({ botFirstName: u.firstName, newLevel });
             // Check if this level unlocks one or more new attacks
             const model = MODELS[u.modelId];
             const learns = model?.learnedAt?.filter(la => la.level === newLevel) ?? [];
@@ -858,6 +860,14 @@ export function reducer(state: GameState, action: Action): GameState {
         // Bracket abandoned/lost — clear carryOver and tournament state
         activeTournament = null;
       }
+      // Compose level-up toast (if any). Multiple level-ups in one fight get
+      // joined into a single line so the player sees the full result.
+      let toastMsg = state.toast;
+      let toastId = state.toastId;
+      if (levelUps.length > 0) {
+        toastMsg = levelUps.map(l => `${l.botFirstName} → LV ${l.newLevel}`).join(' · ');
+        toastId += 1;
+      }
       return {
         ...state,
         bots,
@@ -878,6 +888,8 @@ export function reducer(state: GameState, action: Action): GameState {
         pendingBattle: null,
         battleSetupTeam: [],
         combat: null,
+        toast: toastMsg,
+        toastId,
       };
     }
 
