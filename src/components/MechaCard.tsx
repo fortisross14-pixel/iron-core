@@ -59,7 +59,7 @@ export function MechaCard(props: Props) {
 
   const tColor = theme.typeColor[model.type];
   const rInfo = RARITY_INFO[model.rarity];
-  const imgUrl = `${import.meta.env.BASE_URL}assets/mechas/${model.id}_full.jpeg`;
+  const imgUrl = `${import.meta.env.BASE_URL}assets/mechas/${model.id}_full.webp`;
 
   // Derive displayed values per mode
   let displayLevel: number | null = null;

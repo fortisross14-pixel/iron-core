@@ -26,7 +26,8 @@ export type Scene =
   | 'learnMove'
   | 'captureChoice'
   | 'me'
-  | 'tournament_between';
+  | 'tournament_between'
+  | 'levelUp';
 
 export type DialogStackItem = {
   sceneId: string;
@@ -39,7 +40,12 @@ export interface PendingBattle {
   sourceId: string;          // story scene id, tournament id, etc.
   oppLevel: number;
   oppRank: string;
+  /** Player's team size CAP (max mechas they can field). Player can pick 1..teamSize. */
   teamSize: number;
+  /** Opponent's team size. Defaults to `teamSize` when not specified.
+   *  Set explicitly when player cap differs from opp count (e.g. wild fights:
+   *  player up to 2, opp always 1). */
+  oppTeamSize?: number;
   forceModelId?: string;
   forceFirstName?: string;
   prize: number;
@@ -226,6 +232,17 @@ export interface GameState {
   // move-learn queue: when bots level up and learn new attacks, each prompt
   // is queued here. The first item drives the LearnMoveScreen.
   pendingMoveLearns: { botId: string; newAttackId: string }[];
+
+  // level-up announcement queue: when a bot levels up, we capture a before/after
+  // snapshot so the LevelUpScreen can show what changed. Drained one at a time.
+  pendingLevelUps: {
+    botId: string;
+    newLevel: number;
+    /** Stats AT the level the bot was BEFORE leveling — for delta display. */
+    prevStats: { hp: number; attack: number; defense: number; speed: number; intelligence: number };
+    /** Stats AT the new level. */
+    newStats:  { hp: number; attack: number; defense: number; speed: number; intelligence: number };
+  }[];
 
   // capture/salvage prompt after winning a grind fight against a wild mecha.
   // null when no decision pending.

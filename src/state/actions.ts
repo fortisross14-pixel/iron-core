@@ -96,4 +96,6 @@ export type Action =
   | { type: 'WORKSHOP_FULL_HEAL' }
   // ---- tournament between-fight actions ----
   | { type: 'TOURNAMENT_USE_ITEM'; itemId: string; botId: string }
-  | { type: 'TOURNAMENT_ABANDON' };
+  | { type: 'TOURNAMENT_ABANDON' }
+  // ---- level-up announcement ----
+  | { type: 'ACK_LEVEL_UP' };

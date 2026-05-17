@@ -15,6 +15,7 @@ import { MedalsScreen } from './screens/MedalsScreen';
 import { MeScreen } from './screens/MeScreen';
 import { TournamentBetweenScreen } from './screens/TournamentBetweenScreen';
 import { LearnMoveScreen } from './screens/LearnMoveScreen';
+import { LevelUpScreen } from './screens/LevelUpScreen';
 import { CaptureChoiceScreen } from './screens/CaptureChoiceScreen';
 import { DialogOverlay } from './components/DialogOverlay';
 import { Toast } from './components/Toast';
@@ -85,6 +86,8 @@ export function App() {
       <BottomNav />
       <DialogOverlay />
       <Toast />
+      {/* Level-up announcement overlay — highest priority, always on top */}
+      {state.pendingLevelUps.length > 0 && <LevelUpScreen />}
     </>
   );
 }

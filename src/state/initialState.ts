@@ -45,6 +45,7 @@ export const initialState: GameState = {
   pendingNamingModelId: null,
   pendingNamingIsStarter: false,
   pendingMoveLearns: [],
+  pendingLevelUps: [],
   pendingCapture: null,
 
   toast: null,

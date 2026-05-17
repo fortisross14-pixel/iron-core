@@ -11,7 +11,7 @@ import { MATERIALS } from '../data/materials';
 import { MODELS } from '../data/models';
 import { STORY_SCENES } from '../data/story';
 import { LOCATIONS } from '../data/locations';
-import { getDiskCapacity, getBotType, bestStatOf } from '../game/stats';
+import { getDiskCapacity, getBotType, bestStatOf, getBotStats } from '../game/stats';
 import type { CrewMember } from '../game/types';
 import { getCurrentStats } from '../game/combat';
 
@@ -788,23 +788,48 @@ export function reducer(state: GameState, action: Action): GameState {
       if (!d) return state;
       // money + xp + materials + loot, applied to participants
       const newMoveLearns: { botId: string; newAttackId: string }[] = [];
-      const levelUps: { botFirstName: string; newLevel: number }[] = [];
+      const levelUpAnnouncements: GameState['pendingLevelUps'] = [];
+      // XP is shared equally among participating bots. Solo fight = full XP,
+      // 2-bot team splits 50/50, 3-bot team splits ~33% each, etc.
+      const participantCount = Math.max(1, d.participants.length);
+      const xpPerBot = Math.floor(d.xpReward / participantCount);
       const bots = state.bots.map(b => {
         const participated = d.participants.includes(b.id);
         if (!participated) return b;
         let u = { ...b };
         // XP (only if not already level 30)
         if (u.level < 30) {
-          u.xp += d.xpReward;
+          u.xp += xpPerBot;
           while (u.xp >= u.xpToNext && u.level < 30) {
+            // Snapshot stats AT the current level before bumping
+            const prevSnapshot = getBotStats(u);
+            const prevHp = u.maxHp;
             const newLevel = u.level + 1;
             u = { ...u, xp: u.xp - u.xpToNext, level: newLevel, xpToNext: newLevel * 100, maxHp: u.maxHp + 8 };
-            levelUps.push({ botFirstName: u.firstName, newLevel });
+            // Snapshot stats at the NEW level
+            const newSnapshot = getBotStats(u);
+            levelUpAnnouncements.push({
+              botId: u.id,
+              newLevel,
+              prevStats: {
+                hp: prevHp,
+                attack: prevSnapshot.attack,
+                defense: prevSnapshot.defense,
+                speed: prevSnapshot.speed,
+                intelligence: prevSnapshot.intelligence,
+              },
+              newStats: {
+                hp: u.maxHp,
+                attack: newSnapshot.attack,
+                defense: newSnapshot.defense,
+                speed: newSnapshot.speed,
+                intelligence: newSnapshot.intelligence,
+              },
+            });
             // Check if this level unlocks one or more new attacks
             const model = MODELS[u.modelId];
             const learns = model?.learnedAt?.filter(la => la.level === newLevel) ?? [];
             for (const learn of learns) {
-              // Only queue if not already known (avoid duplicates if learnedAt overlaps defaults)
               const known = new Set([...model.defaultAttacks, ...u.learnedAttacks]);
               if (!known.has(learn.attackId)) {
                 newMoveLearns.push({ botId: u.id, newAttackId: learn.attackId });
@@ -860,14 +885,6 @@ export function reducer(state: GameState, action: Action): GameState {
         // Bracket abandoned/lost — clear carryOver and tournament state
         activeTournament = null;
       }
-      // Compose level-up toast (if any). Multiple level-ups in one fight get
-      // joined into a single line so the player sees the full result.
-      let toastMsg = state.toast;
-      let toastId = state.toastId;
-      if (levelUps.length > 0) {
-        toastMsg = levelUps.map(l => `${l.botFirstName} → LV ${l.newLevel}`).join(' · ');
-        toastId += 1;
-      }
       return {
         ...state,
         bots,
@@ -882,14 +899,22 @@ export function reducer(state: GameState, action: Action): GameState {
         materials,
         achievements: ach,
         pendingMoveLearns: [...state.pendingMoveLearns, ...newMoveLearns],
+        pendingLevelUps: [...state.pendingLevelUps, ...levelUpAnnouncements],
         pendingCapture,
         activeTournament,
         postFight: null,
         pendingBattle: null,
         battleSetupTeam: [],
         combat: null,
-        toast: toastMsg,
-        toastId,
+      };
+    }
+
+    case 'ACK_LEVEL_UP': {
+      // Drain the first level-up from the queue
+      if (state.pendingLevelUps.length === 0) return state;
+      return {
+        ...state,
+        pendingLevelUps: state.pendingLevelUps.slice(1),
       };
     }
 

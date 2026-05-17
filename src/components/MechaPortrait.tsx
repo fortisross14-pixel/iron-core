@@ -3,9 +3,9 @@
  *
  * Two asset modes:
  *   - 'mini' : round portrait (combat HUD, roster lists, captures). Sources
- *              from /assets/mechas/<modelId>_mini.jpeg (or .png as fallback).
+ *              from /assets/mechas/<modelId>_mini.webp (or .png as fallback).
  *   - 'full' : rectangular "trading card" art (profile detail, capture screen).
- *              Sources from /assets/mechas/<modelId>_full.jpeg (or .png).
+ *              Sources from /assets/mechas/<modelId>_full.webp (or .png).
  *
  * If the image file isn't present, falls back to a styled placeholder:
  *   - mini → round disc with the first letter of the model surname
@@ -68,7 +68,7 @@ export function MechaMini({ modelId, size = 'sm', bare = false, outline }: MiniP
     overflow: 'hidden',
   };
 
-  const imgSrc = `${import.meta.env.BASE_URL}assets/mechas/${modelId}_mini.jpeg`;
+  const imgSrc = `${import.meta.env.BASE_URL}assets/mechas/${modelId}_mini.webp`;
   const showImg = !imgFailed;
 
   return (
@@ -118,7 +118,7 @@ interface FullProps {
  *   - Mecha profile detail view
  *   - Dex detail (when implemented)
  *
- * Loads /assets/mechas/<modelId>_full.jpeg. Falls back to a styled card
+ * Loads /assets/mechas/<modelId>_full.webp. Falls back to a styled card
  * with name/type/rarity readout.
  */
 export function MechaFull({ modelId, size = 'md' }: FullProps) {
@@ -143,7 +143,7 @@ export function MechaFull({ modelId, size = 'md' }: FullProps) {
     flexShrink: 0,
   };
 
-  const imgSrc = `${import.meta.env.BASE_URL}assets/mechas/${modelId}_full.jpeg`;
+  const imgSrc = `${import.meta.env.BASE_URL}assets/mechas/${modelId}_full.webp`;
   const showImg = !imgFailed;
 
   return (

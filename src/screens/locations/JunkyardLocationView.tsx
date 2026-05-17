@@ -56,7 +56,8 @@ export function JunkyardLocationView({ locationId }: { locationId: string }) {
       sourceId: place.id,
       oppLevel: spawn.level,
       oppRank: 'rookie',
-      teamSize: 1,
+      teamSize: 2,         // Player can bring up to 2 mechas (XP will split)
+      oppTeamSize: 1,      // Always 1 wild mecha
       forceModelId: spawn.modelId,
       wildModelId: spawn.modelId,
       isWild: true,

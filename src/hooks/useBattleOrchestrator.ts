@@ -52,7 +52,10 @@ export function useBattleOrchestrator() {
     const trainer = battle.trainerId ? ALL_TRAINERS[battle.trainerId] : null;
 
     const opp: CombatBot[] = [];
-    for (let i = 0; i < battle.teamSize; i++) {
+    // Opponent count defaults to player teamSize for trainer fights, but can
+    // be overridden (e.g. wild fights cap player at 2 but opp is always 1).
+    const oppCount = battle.oppTeamSize ?? battle.teamSize;
+    for (let i = 0; i < oppCount; i++) {
       let oppBot: Bot;
       if (battle.isWild) {
         // Look up the grind place to honor its spawnPool levels.
