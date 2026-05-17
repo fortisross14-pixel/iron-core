@@ -4,19 +4,25 @@ import { WEAPONS } from '../../data/weapons';
 import { ARMORS } from '../../data/armors';
 import { DISKS } from '../../data/disks';
 import { ITEMS } from '../../data/items';
+import { BATTERIES } from '../../data/batteries';
 import { MATERIALS } from '../../data/materials';
 import { MODELS } from '../../data/models';
 import { TYPE_INFO } from '../../data/types';
 import { theme } from '../../styles/theme';
 import { Button } from '../../components/Button';
 import { SubHeader } from '../../components/SectionHeader';
+import { getPlace } from '../../data/places';
 
-type Tab = 'sell' | 'weapons' | 'armor' | 'disks' | 'items' | 'chassis';
+type Tab = 'sell' | 'weapons' | 'armor' | 'disks' | 'items' | 'batteries' | 'chassis';
 
 export function MarketLocationView({ locationId }: { locationId: string }) {
   const { state, dispatch } = useGame();
   const isVoltspire = locationId === 'volt_market';
   const [tab, setTab] = useState<Tab>('sell');
+
+  // Pull this store's actual inventory restrictions
+  const place = state.currentLocationId ? getPlace(state.currentLocationId) : null;
+  const storeInv = place?.kind === 'store' ? place.inventory : null;
 
   return (
     <div>
@@ -27,6 +33,7 @@ export function MarketLocationView({ locationId }: { locationId: string }) {
           { id: 'armor', label: 'ARMOR' },
           { id: 'disks', label: 'DISKS' },
           { id: 'items', label: 'ITEMS' },
+          { id: 'batteries', label: 'BATT' },
           { id: 'chassis', label: 'CHASSIS' },
         ] as { id: Tab; label: string }[]).map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
@@ -119,15 +126,38 @@ export function MarketLocationView({ locationId }: { locationId: string }) {
       {tab === 'items' && (
         <>
           <SubHeader>CONSUMABLES</SubHeader>
-          {Object.values(ITEMS).map(it => (
-            <div key={it.id} style={rowStyle}>
-              <div style={mainStyle}>
-                <div style={nameStyle}>{it.name}{state.items[it.id] ? <span style={ownedStyle}>×{state.items[it.id]}</span> : null}</div>
-                <div style={descStyle}>{it.desc}</div>
+          {Object.values(ITEMS)
+            .filter(it => !storeInv?.items || storeInv.items.includes(it.id))
+            .map(it => (
+              <div key={it.id} style={rowStyle}>
+                <div style={mainStyle}>
+                  <div style={nameStyle}>{it.name}{state.items[it.id] ? <span style={ownedStyle}>×{state.items[it.id]}</span> : null}</div>
+                  <div style={descStyle}>{it.desc}</div>
+                </div>
+                <Button small disabled={state.money < it.price} onClick={() => dispatch({ type: 'BUY_ITEM', itemId: it.id })}>{it.price}</Button>
               </div>
-              <Button small disabled={state.money < it.price} onClick={() => dispatch({ type: 'BUY_ITEM', itemId: it.id })}>{it.price}</Button>
-            </div>
-          ))}
+            ))}
+        </>
+      )}
+
+      {tab === 'batteries' && (
+        <>
+          <SubHeader>POWER CELLS</SubHeader>
+          <div style={hintStyle}>Equippable batteries determine maximum capacity. Each attack drains battery.</div>
+          {Object.values(BATTERIES)
+            .filter(b => b.price > 0 && (!storeInv?.batteries || storeInv.batteries.includes(b.id)))
+            .map(b => (
+              <div key={b.id} style={rowStyle}>
+                <div style={mainStyle}>
+                  <div style={nameStyle}>{b.name}{state.batteryInv[b.id] ? <span style={ownedStyle}>×{state.batteryInv[b.id]}</span> : null}<span style={{ ...chipStyle, color: theme.color.info, borderColor: theme.color.info }}>{b.capacity} cap</span></div>
+                  <div style={descStyle}>{b.desc}</div>
+                </div>
+                <Button small disabled={state.money < b.price} onClick={() => dispatch({ type: 'BUY_BATTERY', batteryId: b.id })}>{b.price}</Button>
+              </div>
+            ))}
+          {Object.values(BATTERIES).filter(b => b.price > 0 && (!storeInv?.batteries || storeInv.batteries.includes(b.id))).length === 0 && (
+            <div style={hintStyle}>This store doesn't stock batteries. Try a larger city.</div>
+          )}
         </>
       )}
 

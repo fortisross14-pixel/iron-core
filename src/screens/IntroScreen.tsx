@@ -88,7 +88,7 @@ export function IntroScreen() {
             SKIP PROLOGUE (DEV)
           </Button>
         </Frame>
-        <div style={footnoteStyle}>v0.95 · CYBERPUNK SKIN</div>
+        <div style={footnoteStyle}>v1.00 · INITIAL RELEASE</div>
       </div>
     </div>
   );

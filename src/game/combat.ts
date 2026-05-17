@@ -5,7 +5,7 @@ import { MODELS } from '../data/models';
 import { getEffectiveness } from '../data/types';
 import type { Attack, AttackElement, StatusInflict } from '../data/attacks';
 import type { MechaType } from '../data/types';
-import { getBotStats, getBotType, getFactionAffinity } from './stats';
+import { getBotStats, getBotType, getFactionAffinity, maxBatteryOf } from './stats';
 import type { FactionId } from '../data/factions';
 import type { Bot, FinalStats } from './types';
 
@@ -34,12 +34,18 @@ export interface CombatBot {
   firstName: string;
   level: number;
   maxHp: number;
+  /** Maximum battery for this bot (determined by equipped battery cell). */
+  maxBattery: number;
+  /** Initial battery at fight start, used for "carry over" between tournament rounds. */
+  battery: string | null;
   weapon: string | null;
   armor: string | null;
   learnedAttacks: string[];
 
   side: Side;
   hp: number;
+  /** Current battery. Drained by attacks. */
+  bat: number;
   baseStats: FinalStats;
   statMods: { attack: number; defense: number; speed: number };
   statuses: ActiveStatus[];
@@ -53,18 +59,24 @@ export function makeCombatBot(
   bot: Bot,
   mentorBonuses: { attack: number; defense: number; speed: number },
   side: Side,
+  /** Optional override for current HP / battery — used when carrying over from a previous tournament fight. */
+  carryover?: { hp?: number; bat?: number },
 ): CombatBot {
+  const maxBattery = maxBatteryOf(bot);
   return {
     id: bot.id,
     modelId: bot.modelId,
     firstName: bot.firstName,
     level: bot.level,
     maxHp: bot.maxHp,
+    maxBattery,
+    battery: bot.battery,
     weapon: bot.weapon,
     armor: bot.armor,
     learnedAttacks: bot.learnedAttacks,
     side,
-    hp: bot.maxHp,
+    hp: carryover?.hp ?? bot.maxHp,
+    bat: carryover?.bat ?? maxBattery,
     baseStats: getBotStats(bot, mentorBonuses),
     statMods: { attack: 0, defense: 0, speed: 0 },
     statuses: [],
@@ -107,6 +119,11 @@ export interface DamageResult {
   isCrit?: boolean;
   typeMult?: number;
   effLabel?: string | null;
+  effectiveness?: number;
+  /** For support attacks (e.g. Replenish Charge), the type of buff. */
+  support?: 'recharge' | 'heal';
+  /** The numeric value of the support effect. */
+  supportValue?: number;
 }
 
 export function calculateDamage(
@@ -200,6 +217,15 @@ export function executeAttack(
   attack: Attack,
   attackerFactionId: FactionId | null,
 ): DamageResult {
+  // Drain battery (clamped to 0; battery should have been checked before this call)
+  attacker.bat = Math.max(0, attacker.bat - attack.batteryCost);
+
+  // SUPPORT ATTACK: Replenish Charge — restore battery to ally, no damage
+  if (attack.allyTarget && attack.chargeRestore) {
+    target.bat = Math.min(target.maxBattery, target.bat + attack.chargeRestore);
+    return { hit: true, dmg: 0, effectiveness: 1, support: 'recharge', supportValue: attack.chargeRestore };
+  }
+
   const r = calculateDamage(attacker, target, attack, attackerFactionId);
   if (!r.hit) return r;
   target.hp -= r.dmg ?? 0;
@@ -261,12 +287,20 @@ export function getSignatureAttack(bot: Pick<Bot, 'weapon'>): Attack | null {
 // ============================================================
 
 export function aiChooseAttack(actor: CombatBot, playerAlive: CombatBot[], roundNumber: number): { attack: Attack; isSignature: boolean } {
+  // Signature first (if battery allows)
   if (roundNumber >= 3 && actor.signatureUsesLeft > 0 && actor.weapon) {
     const sig = getSignatureAttack({ weapon: actor.weapon });
-    if (sig && Math.random() < 0.6) return { attack: sig, isSignature: true };
+    if (sig && actor.bat >= sig.batteryCost && Math.random() < 0.6) {
+      return { attack: sig, isSignature: true };
+    }
   }
-  const atks = getActiveAttacks({ modelId: actor.modelId, learnedAttacks: actor.learnedAttacks });
-  if (!atks.length) return { attack: ATTACKS.basic_strike, isSignature: false };
+  // Filter to affordable attacks. Skip ally-targeted (no AI logic for it).
+  let atks = getActiveAttacks({ modelId: actor.modelId, learnedAttacks: actor.learnedAttacks })
+    .filter(a => !a.allyTarget && actor.bat >= a.batteryCost);
+  // If nothing affordable, fall back to basic_strike (5 cost — always cheap)
+  if (!atks.length) {
+    return { attack: ATTACKS.basic_strike, isSignature: false };
+  }
 
   if (playerAlive.length > 0) {
     const target = playerAlive[Math.floor(Math.random() * playerAlive.length)];

@@ -92,6 +92,8 @@ export const TRAINERS_AMATEUR: Record<string, Trainer> = {
   // ---- upper 7 ----
   am_021: { id: 'am_021', firstName: 'Thane',   surname: 'Korven',   tier: 'amateur', fame: 325, homeCityId: 'voltspire', flavor: 'A name in Elementalist circles.',     team: [{ modelId: 'cinderboar', level: 5 }] },
   am_022: { id: 'am_022', firstName: 'Mavi',    surname: 'Salt',     tier: 'amateur', fame: 365, homeCityId: 'voltspire', flavor: 'Two-time Bronze winner.',             team: [{ modelId: 'tidewall',   level: 5 }] },
+  // ---- story trainer: Krait (the Smelter's Gate toll-taker, rank ~22-23) ----
+  krait:   { id: 'krait',  firstName: 'Krait',   surname: 'Toll-Taker', tier: 'amateur', fame: 385, homeCityId: 'ironhaven', flavor: 'The local terror. Holds the gate east. Has refused the Senior Cup three years running.', team: [{ modelId: 'scrap_grunt', level: 3 }, { modelId: 'rust_husk', level: 3 }] },
   am_023: { id: 'am_023', firstName: 'Ember',   surname: 'Halt',     tier: 'amateur', fame: 410, homeCityId: 'voltspire', flavor: 'Burned out three frames last year.',  team: [{ modelId: 'cinderboar', level: 5 }] },
   am_024: { id: 'am_024', firstName: 'Cinder',  surname: 'Voss',     tier: 'amateur', fame: 445, homeCityId: 'voltspire', flavor: 'Said to be considering the Test.',    team: [{ modelId: 'rockwarden', level: 6 }] },
   am_025: { id: 'am_025', firstName: 'Ash',     surname: 'Pelarn',   tier: 'amateur', fame: 480, homeCityId: 'voltspire', flavor: 'Industrial-sponsored.',               team: [{ modelId: 'iron_jack',   level: 6 }] },

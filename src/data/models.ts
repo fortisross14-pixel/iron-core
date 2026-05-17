@@ -93,6 +93,7 @@ const PROGRESSION_BY_TYPE: Record<MechaType, LevelLearnedAttack[]> = {
     { level: 2,  attackId: 'spark' },
     { level: 5,  attackId: 'thunderfork' },
     { level: 10, attackId: 'lightning_t4' },
+    { level: 10, attackId: 'replenish_charge' }, // Lightning-only support move; ally-targeted battery transfer
     { level: 20, attackId: 'lightning_t5' },
   ],
   ice:       [

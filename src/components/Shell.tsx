@@ -136,7 +136,7 @@ export function Shell({ children, showHeader = true, showFooter = false, footer,
             <div style={brandStyle}>
               <span style={brandMarkStyle}>◆</span>
               <span style={brandTextStyle}>IRON&nbsp;CORE</span>
-              <span style={versionStyle}>v0.95</span>
+              <span style={versionStyle}>v1.00</span>
             </div>
             <div style={headerStatsStyle}>
               {faction && (

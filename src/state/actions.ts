@@ -35,6 +35,7 @@ export type Action =
   // ---- battle prep ----
   | { type: 'QUEUE_BATTLE'; battle: PendingBattle }
   | { type: 'TOGGLE_BATTLE_SELECT'; botId: string }
+  | { type: 'SET_BATTLE_TEAM'; botIds: string[] }
   | { type: 'START_BATTLE'; teamBots: Bot[] }
   | { type: 'CANCEL_BATTLE' }
   // ---- combat ----
@@ -53,14 +54,15 @@ export type Action =
   | { type: 'POSTFIGHT_ACK' }
   // ---- assign item ----
   | { type: 'OPEN_ASSIGN'; botId: string }
-  | { type: 'ASSIGN_CATEGORY'; category: 'weapon' | 'armor' | 'disk' }
-  | { type: 'ASSIGN_EQUIP'; botId: string; category: 'weapon' | 'armor'; itemId: string }
-  | { type: 'ASSIGN_UNEQUIP'; botId: string; category: 'weapon' | 'armor' }
+  | { type: 'ASSIGN_CATEGORY'; category: 'weapon' | 'armor' | 'disk' | 'battery' }
+  | { type: 'ASSIGN_EQUIP'; botId: string; category: 'weapon' | 'armor' | 'battery'; itemId: string }
+  | { type: 'ASSIGN_UNEQUIP'; botId: string; category: 'weapon' | 'armor' | 'battery' }
   | { type: 'ASSIGN_INSTALL_DISK'; botId: string; diskId: string }
   | { type: 'ASSIGN_CLOSE' }
   // ---- market ----
   | { type: 'BUY_WEAPON'; weaponId: string; price?: number }
   | { type: 'BUY_ARMOR'; armorId: string }
+  | { type: 'BUY_BATTERY'; batteryId: string }
   | { type: 'BUY_DISK'; diskId: string }
   | { type: 'BUY_ITEM'; itemId: string }
   | { type: 'BUY_MODEL'; modelId: string }
@@ -87,4 +89,11 @@ export type Action =
   | { type: 'CAPTURE_KEEP' }
   | { type: 'CAPTURE_SALVAGE' }
   // ---- crew management ----
-  | { type: 'PROMOTE_TO_CREW'; botId: string };
+  | { type: 'PROMOTE_TO_CREW'; botId: string }
+  // ---- player identity ----
+  | { type: 'SET_PLAYER_NAME'; name: string }
+  // ---- workshop services ----
+  | { type: 'WORKSHOP_FULL_HEAL' }
+  // ---- tournament between-fight actions ----
+  | { type: 'TOURNAMENT_USE_ITEM'; itemId: string; botId: string }
+  | { type: 'TOURNAMENT_ABANDON' };

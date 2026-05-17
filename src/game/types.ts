@@ -21,6 +21,8 @@ export interface Bot {
   xp: number;
   xpToNext: number;
   maxHp: number;
+  /** Equipped battery (null = factory standard_cell). Determines maxBattery. */
+  battery: string | null;
   weapon: string | null;
   armor: string | null;
   learnedAttacks: string[];   // attacks installed via attack disks

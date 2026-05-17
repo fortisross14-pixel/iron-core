@@ -4,6 +4,7 @@ import { initialState } from './initialState';
 import { createBot } from '../game/progression';
 import { WEAPONS } from '../data/weapons';
 import { ARMORS } from '../data/armors';
+import { BATTERIES, getBattery } from '../data/batteries';
 import { DISKS } from '../data/disks';
 import { ITEMS } from '../data/items';
 import { MATERIALS } from '../data/materials';
@@ -41,10 +42,9 @@ export function reducer(state: GameState, action: Action): GameState {
 
     case 'CONFIRM_NAMING': {
       if (!state.pendingNamingModelId) return state;
-      // Capture-and-keep should respect the bot's actual current level, not always 1
-      // (wild bots come from a grind place at a level set by the spawn pool).
-      // For starter bots, level 1 is correct.
-      const level = state.pendingNamingIsStarter ? 1 : (state.pendingCaptureLevel ?? 1);
+      // Starter is level 2 (uncle says he tuned it up before giving it to you).
+      // Captured wilds use the level they were defeated at.
+      const level = state.pendingNamingIsStarter ? 2 : (state.pendingCaptureLevel ?? 1);
       const bot = createBot(state.pendingNamingModelId, action.firstName, level);
       if (!bot) return state;
       const discovered = new Set(state.discovered);
@@ -178,6 +178,9 @@ export function reducer(state: GameState, action: Action): GameState {
       return { ...state, battleSetupTeam: team };
     }
 
+    case 'SET_BATTLE_TEAM':
+      return { ...state, battleSetupTeam: action.botIds };
+
     case 'CANCEL_BATTLE':
       return { ...state, pendingBattle: null, battleSetupTeam: [], scene: 'location' };
 
@@ -215,7 +218,20 @@ export function reducer(state: GameState, action: Action): GameState {
           },
         };
       }
-      // ITEM and DEFEND still let the player pick which bot
+      // ABANDON skips bot selection — orchestrator.abandon() finalizes the fight directly
+      if (action.action === 'abandon') {
+        return {
+          ...state,
+          combat: {
+            ...state.combat,
+            action: 'abandon',
+            phase: 'bot_choose',  // unused — orchestrator fires immediately
+            selectedBot: null,
+            selectedAttack: null,
+          },
+        };
+      }
+      // ITEM, DEFEND, SELF_REPAIR, SELF_CHARGE all let the player pick which bot
       return {
         ...state,
         combat: {
@@ -318,7 +334,7 @@ export function reducer(state: GameState, action: Action): GameState {
           weaponInv: nW,
           bots: state.bots.map(b => b.id === action.botId ? { ...b, weapon: action.itemId } : b),
         };
-      } else {
+      } else if (action.category === 'armor') {
         const a = ARMORS[action.itemId];
         if (!a) return state;
         const nA = { ...state.armorInv };
@@ -329,6 +345,19 @@ export function reducer(state: GameState, action: Action): GameState {
           ...state,
           armorInv: nA,
           bots: state.bots.map(b => b.id === action.botId ? { ...b, armor: action.itemId } : b),
+        };
+      } else {
+        // battery
+        const b = BATTERIES[action.itemId];
+        if (!b) return state;
+        const nB = { ...state.batteryInv };
+        nB[action.itemId] = (nB[action.itemId] ?? 0) - 1;
+        if (nB[action.itemId] <= 0) delete nB[action.itemId];
+        if (bot.battery) nB[bot.battery] = (nB[bot.battery] ?? 0) + 1;
+        return {
+          ...state,
+          batteryInv: nB,
+          bots: state.bots.map(b => b.id === action.botId ? { ...b, battery: action.itemId } : b),
         };
       }
     }
@@ -345,7 +374,7 @@ export function reducer(state: GameState, action: Action): GameState {
           weaponInv: nW,
           bots: state.bots.map(b => b.id === action.botId ? { ...b, weapon: null } : b),
         };
-      } else {
+      } else if (action.category === 'armor') {
         if (!bot.armor) return state;
         const nA = { ...state.armorInv };
         nA[bot.armor] = (nA[bot.armor] ?? 0) + 1;
@@ -353,6 +382,16 @@ export function reducer(state: GameState, action: Action): GameState {
           ...state,
           armorInv: nA,
           bots: state.bots.map(b => b.id === action.botId ? { ...b, armor: null } : b),
+        };
+      } else {
+        // battery — cannot unequip standard (built-in) if not set; otherwise return to inv
+        if (!bot.battery) return state;
+        const nB = { ...state.batteryInv };
+        nB[bot.battery] = (nB[bot.battery] ?? 0) + 1;
+        return {
+          ...state,
+          batteryInv: nB,
+          bots: state.bots.map(b => b.id === action.botId ? { ...b, battery: null } : b),
         };
       }
     }
@@ -423,6 +462,17 @@ export function reducer(state: GameState, action: Action): GameState {
         money: state.money - a.price,
         armorInv: { ...state.armorInv, [action.armorId]: (state.armorInv[action.armorId] ?? 0) + 1 },
         toast: `Acquired ${a.name}.`,
+        toastId: state.toastId + 1,
+      };
+    }
+    case 'BUY_BATTERY': {
+      const bat = BATTERIES[action.batteryId];
+      if (!bat || state.money < bat.price) return state;
+      return {
+        ...state,
+        money: state.money - bat.price,
+        batteryInv: { ...state.batteryInv, [action.batteryId]: (state.batteryInv[action.batteryId] ?? 0) + 1 },
+        toast: `Acquired ${bat.name}.`,
         toastId: state.toastId + 1,
       };
     }
@@ -655,6 +705,75 @@ export function reducer(state: GameState, action: Action): GameState {
       };
     }
 
+    case 'SET_PLAYER_NAME': {
+      const trimmed = action.name.trim().slice(0, 20);
+      if (!trimmed) return state;
+      return { ...state, playerName: trimmed };
+    }
+
+    case 'WORKSHOP_FULL_HEAL': {
+      // Workshops fully restore HP and battery for all roster bots.
+      // Since the persistent Bot doesn't track current HP (it's restored at
+      // fight start), the only state we actually need to clear is the
+      // tournament carry-over. The flavor toast confirms the action visually.
+      return {
+        ...state,
+        activeTournament: state.activeTournament
+          ? { ...state.activeTournament, carryOver: undefined }
+          : null,
+        toast: 'All systems restored.',
+        toastId: state.toastId + 1,
+      };
+    }
+
+    case 'TOURNAMENT_USE_ITEM': {
+      // Apply a consumable to a bot's carry-over HP/BAT between fights.
+      const owned = state.items[action.itemId] ?? 0;
+      if (owned <= 0) return state;
+      if (!state.activeTournament) return state;
+      const it = ITEMS[action.itemId];
+      if (!it) return state;
+      const bot = state.bots.find(b => b.id === action.botId);
+      if (!bot) return state;
+      const maxBat = getBattery(bot.battery).capacity;
+      const carry = { ...(state.activeTournament.carryOver ?? {}) };
+      const cur = carry[bot.id] ?? { hp: bot.maxHp, bat: maxBat };
+      let newHp = cur.hp;
+      let newBat = cur.bat;
+      if (it.effect.type === 'heal') {
+        newHp = Math.min(bot.maxHp, cur.hp + Math.round(bot.maxHp * it.effect.value));
+      } else if (it.effect.type === 'recharge') {
+        newBat = Math.min(maxBat, cur.bat + it.effect.value);
+      } else {
+        // shield/buff_atk have no out-of-combat effect
+        return { ...state, toast: 'That item only works in combat.', toastId: state.toastId + 1 };
+      }
+      carry[bot.id] = { hp: newHp, bat: newBat };
+      const items = { ...state.items, [action.itemId]: owned - 1 };
+      if (items[action.itemId] <= 0) delete items[action.itemId];
+      return {
+        ...state,
+        items,
+        activeTournament: { ...state.activeTournament, carryOver: carry },
+        toast: `${bot.firstName}: ${it.name} applied.`,
+        toastId: state.toastId + 1,
+      };
+    }
+
+    case 'TOURNAMENT_ABANDON': {
+      // Forfeit the bracket. Progress resets, no rewards.
+      return {
+        ...state,
+        activeTournament: null,
+        pendingBattle: null,
+        battleSetupTeam: [],
+        postFight: null,
+        scene: 'location',
+        toast: 'Tournament abandoned. Bracket reset.',
+        toastId: state.toastId + 1,
+      };
+    }
+
     // -------- combat side effects --------
     case 'CONSUME_ITEM': {
       const owned = state.items[action.itemId] ?? 0;
@@ -679,11 +798,11 @@ export function reducer(state: GameState, action: Action): GameState {
           while (u.xp >= u.xpToNext && u.level < 30) {
             const newLevel = u.level + 1;
             u = { ...u, xp: u.xp - u.xpToNext, level: newLevel, xpToNext: newLevel * 100, maxHp: u.maxHp + 8 };
-            // Check if this level unlocks a new attack
+            // Check if this level unlocks one or more new attacks
             const model = MODELS[u.modelId];
-            const learn = model?.learnedAt?.find(la => la.level === newLevel);
-            if (learn) {
-              // Only queue if not already known (avoid duplicates if learnedAt is also in defaults)
+            const learns = model?.learnedAt?.filter(la => la.level === newLevel) ?? [];
+            for (const learn of learns) {
+              // Only queue if not already known (avoid duplicates if learnedAt overlaps defaults)
               const known = new Set([...model.defaultAttacks, ...u.learnedAttacks]);
               if (!known.has(learn.attackId)) {
                 newMoveLearns.push({ botId: u.id, newAttackId: learn.attackId });
@@ -731,6 +850,14 @@ export function reducer(state: GameState, action: Action): GameState {
       // Achievements
       const ach = { ...state.achievements, totalBattles: state.achievements.totalBattles + 1 };
       if (d.source === 'junkyard' && d.won) ach.junkyardWins += 1;
+      // Tournament HP/BAT carry-over (only mid-bracket wins, never losses)
+      let activeTournament = state.activeTournament;
+      if (activeTournament && d.won && d.isTournamentMidBracket && d.playerEndState) {
+        activeTournament = { ...activeTournament, carryOver: d.playerEndState };
+      } else if (activeTournament && !d.won) {
+        // Bracket abandoned/lost — clear carryOver and tournament state
+        activeTournament = null;
+      }
       return {
         ...state,
         bots,
@@ -746,6 +873,7 @@ export function reducer(state: GameState, action: Action): GameState {
         achievements: ach,
         pendingMoveLearns: [...state.pendingMoveLearns, ...newMoveLearns],
         pendingCapture,
+        activeTournament,
         postFight: null,
         pendingBattle: null,
         battleSetupTeam: [],

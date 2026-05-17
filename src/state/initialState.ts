@@ -4,6 +4,8 @@ export const initialState: GameState = {
   scene: 'intro',
   dialogStack: [],
 
+  playerName: '',
+
   factionId: null,
   alignment: { moral: 0, posture: 0 },
 
@@ -21,6 +23,7 @@ export const initialState: GameState = {
   weaponInv: {},
   armorInv: {},
   diskInv: {},
+  batteryInv: {},
   items: { repair_kit: 1 },
   materials: {},
   discovered: new Set(),

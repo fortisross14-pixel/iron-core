@@ -24,7 +24,9 @@ export type Scene =
   | 'ranking'
   | 'medals'
   | 'learnMove'
-  | 'captureChoice';
+  | 'captureChoice'
+  | 'me'
+  | 'tournament_between';
 
 export type DialogStackItem = {
   sceneId: string;
@@ -98,7 +100,7 @@ export type CombatPhase =
   | 'enemy_turn'           // animating enemy turn
   | 'round_end';
 
-export type CombatAction = 'attack' | 'item' | 'defend';
+export type CombatAction = 'attack' | 'item' | 'defend' | 'self_repair' | 'self_charge' | 'abandon';
 
 export interface CombatMessage {
   text: string;
@@ -135,6 +137,9 @@ export interface PostFightData {
   modelReward?: string;
   // for multi-round tournaments
   isTournamentMidBracket?: boolean;
+  /** HP/BAT snapshot of player team after the fight, keyed by bot id.
+   *  Used to carry over state to the next tournament fight. */
+  playerEndState?: Record<string, { hp: number; bat: number }>;
   // story hooks to fire after the result is acknowledged
   nextSceneId?: string;
   flagsToSet?: string[];
@@ -153,12 +158,18 @@ export interface ActiveTournament {
   teamBotIds: string[];          // team picked once for the whole bracket
   fameAccumulated: number;
   prizeAccumulated: number;
+  /** HP/battery values to carry over from previous fight, keyed by bot id.
+   *  Set when a tournament fight ends; consumed when the next fight starts. */
+  carryOver?: Record<string, { hp: number; bat: number }>;
 }
 
 export interface GameState {
   scene: Scene;
   // dialog overlay (if active, renders on top of current scene)
   dialogStack: DialogStackItem[];
+
+  // player identity (set on first 'Me' tab visit or via prologue later)
+  playerName: string;
 
   // player & faction
   factionId: FactionId | null;
@@ -185,6 +196,7 @@ export interface GameState {
   weaponInv: Record<string, number>;
   armorInv: Record<string, number>;
   diskInv: Record<string, number>;
+  batteryInv: Record<string, number>;
   items: Record<string, number>;
   materials: Record<string, number>;
   discovered: Set<string>;
@@ -204,7 +216,7 @@ export interface GameState {
   postFight: PostFightData | null;
   // active tournament context (if running a bracket)
   activeTournament: ActiveTournament | null;
-  assignItemContext: { botId: string; category: 'weapon' | 'armor' | 'disk' | null } | null;
+  assignItemContext: { botId: string; category: 'weapon' | 'armor' | 'disk' | 'battery' | null } | null;
 
   // naming flow (after starter pick OR after capture)
   pendingNamingModelId: string | null;

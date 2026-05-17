@@ -87,6 +87,7 @@ export interface StorePlace extends PlaceBase {
     weapons?: string[];
     armors?: string[];
     disks?: string[];
+    batteries?: string[];
     mechas?: string[];      // (for sale — Step 3c+)
   };
   /** Multiplier on base sell price the player gets when selling here.

@@ -17,6 +17,7 @@ export function createBot(modelId: string, firstName?: string, level = 1): Bot |
     xp: 0,
     xpToNext: level * 100,
     maxHp: model.maxHp,
+    battery: null,  // null = factory standard_cell (50 cap)
     weapon: null,
     armor: null,
     learnedAttacks: [],
@@ -63,12 +64,26 @@ export function generateOpponent(params: OpponentParams): Bot {
 }
 
 /** Generate a wild (abandoned mecha) opponent for the junkyard. */
-export function generateJunkyardWild(playerLevel: number): Bot {
-  const wildIds = ['rust_husk', 'feral_grub', 'brittle_charge'];
+/**
+ * Generate a wild mecha for a grind location.
+ * Level range comes from the location's spawnPool config (see places/types.ts);
+ * if not provided, defaults to a clamp around the player's level. Ironhaven
+ * junkyard caps at level 1 — beatable with a level-2 starter regardless of
+ * type matchup.
+ */
+export function generateJunkyardWild(
+  playerLevel: number,
+  options?: { minLevel?: number; maxLevel?: number; pool?: string[] }
+): Bot {
+  const pool = options?.pool ?? ['rust_husk', 'feral_grub', 'brittle_charge'];
+  const minLvl = options?.minLevel ?? 1;
+  const maxLvl = options?.maxLevel ?? Math.max(1, playerLevel - 1);
+  // Random integer in [minLvl, maxLvl]
+  const lvl = minLvl + Math.floor(Math.random() * (Math.max(minLvl, maxLvl) - minLvl + 1));
   return generateOpponent({
-    level: Math.max(1, playerLevel - 1),
+    level: lvl,
     rankId: 'rookie',
-    forceModelId: pick(wildIds),
+    forceModelId: pick(pool),
     forceFirstName: 'Feral',
   });
 }

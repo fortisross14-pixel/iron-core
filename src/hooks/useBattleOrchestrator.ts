@@ -13,6 +13,7 @@ import { DISKS } from '../data/disks';
 import type { Bot } from '../game/types';
 import type { PendingBattle, CombatRuntime, PostFightData, LootDrop } from '../state/types';
 import { generateOpponent, generateJunkyardWild, applyXp } from '../game/progression';
+import { getPlace } from '../data/places';
 import { getBotPower, calcMentorBonuses, getBotStats } from '../game/stats';
 import { getRank } from '../data/ranks';
 import { getBotFullName } from '../game/display';
@@ -43,13 +44,26 @@ export function useBattleOrchestrator() {
       .filter((b): b is Bot => Boolean(b));
 
     const mentorBonuses = calcMentorBonuses(state.crew);
-    const player = playerTeamRaw.map(b => makeCombatBot(b, mentorBonuses, 'player'));
+    const carry = state.activeTournament?.carryOver;
+    const player = playerTeamRaw.map(b => makeCombatBot(b, mentorBonuses, 'player', carry?.[b.id]));
 
     const opp: CombatBot[] = [];
     for (let i = 0; i < battle.teamSize; i++) {
       let oppBot: Bot;
       if (battle.isWild) {
-        oppBot = generateJunkyardWild(playerTeamRaw[0]?.level ?? 1);
+        // Look up the grind place to honor its spawnPool levels.
+        const place = battle.sourceId ? getPlace(battle.sourceId) : null;
+        const spawnPool = place?.kind === 'grind_place' ? place.spawnPool : null;
+        if (spawnPool && spawnPool.length > 0) {
+          const pick = spawnPool[Math.floor(Math.random() * spawnPool.length)];
+          oppBot = generateJunkyardWild(playerTeamRaw[0]?.level ?? 1, {
+            minLevel: pick.minLevel,
+            maxLevel: pick.maxLevel,
+            pool: [pick.modelId],
+          });
+        } else {
+          oppBot = generateJunkyardWild(playerTeamRaw[0]?.level ?? 1);
+        }
       } else if (i === 0 && battle.forceModelId) {
         oppBot = generateOpponent({
           level: battle.oppLevel,
@@ -88,19 +102,30 @@ export function useBattleOrchestrator() {
     const cs = state.combat;
     if (!cs || !cs.selectedBot || !cs.selectedAttack) return;
     const attacker = cs.player.find(b => b.id === cs.selectedBot);
-    const target = cs.opp.find(b => b.id === targetId);
-    if (!attacker || !target || target.hp <= 0) return;
     const attack = ATTACKS[cs.selectedAttack];
-    if (!attack) return;
+    if (!attacker || !attack) return;
+
+    // Ally-target attacks (e.g. Replenish Charge): target is a player bot, not enemy
+    const isAlly = !!attack.allyTarget;
+    const target = isAlly
+      ? cs.player.find(b => b.id === targetId)
+      : cs.opp.find(b => b.id === targetId);
+    if (!target || target.hp <= 0) return;
+    if (isAlly && target.id === attacker.id) return;  // cannot self-target
 
     const next = cloneCombat(cs);
     const att = next.player.find(b => b.id === attacker.id)!;
-    const tgt = next.opp.find(b => b.id === target.id)!;
+    const tgt = isAlly
+      ? next.player.find(b => b.id === target.id)!
+      : next.opp.find(b => b.id === target.id)!;
     const r = executeAttack(att, tgt, attack, state.factionId);
 
     let msgText: string;
     let emphasis: 'crit' | 'super' | 'resisted' | 'miss' | undefined;
-    if (!r.hit) {
+    if (r.support === 'recharge') {
+      msgText = `${att.firstName} → ${tgt.firstName}: REPLENISH CHARGE +${r.supportValue} BAT`;
+      emphasis = 'super';
+    } else if (!r.hit) {
       msgText = `${att.firstName} → ${tgt.firstName}: MISSED`;
       emphasis = 'miss';
     } else {
@@ -122,7 +147,6 @@ export function useBattleOrchestrator() {
     next.message = { text: msgText, emphasis };
     dispatch({ type: 'COMBAT_REPLACE', combat: next });
 
-    // schedule a check after the message displays
     setTimeout(() => checkRoundEnd(next), 900);
   }, [state.combat, state.factionId, dispatch]);
 
@@ -149,6 +173,9 @@ export function useBattleOrchestrator() {
     } else if (it.effect.type === 'buff_atk') {
       user.statMods.attack += it.effect.value;
       user._modTimers.push({ stat: 'attack', value: it.effect.value, dur: it.effect.dur ?? 3 });
+    } else if (it.effect.type === 'recharge') {
+      // Heavy Battery Kit uses 9999 as a "full" sentinel — cap to maxBattery anyway
+      user.bat = Math.min(user.maxBattery, user.bat + it.effect.value);
     }
     user.actedThisRound = true;
     next.message = { text: `${user.firstName} used ${it.name}` };
@@ -169,6 +196,48 @@ export function useBattleOrchestrator() {
     next.message = { text: `${b.firstName} braces` };
     dispatch({ type: 'COMBAT_REPLACE', combat: next });
     setTimeout(() => checkRoundEnd(next), 700);
+  }, [state.combat, dispatch]);
+
+  // ---- self-repair: restore 5% of max HP, free, costs the bot's action ----
+  const selfRepair = useCallback((botId: string) => {
+    const cs = state.combat;
+    if (!cs) return;
+    const next = cloneCombat(cs);
+    const b = next.player.find(x => x.id === botId);
+    if (!b || b.hp <= 0 || b.actedThisRound) return;
+    const heal = Math.max(1, Math.round(b.maxHp * 0.05));
+    b.hp = Math.min(b.maxHp, b.hp + heal);
+    b.actedThisRound = true;
+    next.message = { text: `${b.firstName}: SELF-REPAIR +${heal} HP`, emphasis: 'super' };
+    dispatch({ type: 'COMBAT_REPLACE', combat: next });
+    setTimeout(() => checkRoundEnd(next), 700);
+  }, [state.combat, dispatch]);
+
+  // ---- self-charge: restore 5% of max battery, free, costs the bot's action ----
+  const selfCharge = useCallback((botId: string) => {
+    const cs = state.combat;
+    if (!cs) return;
+    const next = cloneCombat(cs);
+    const b = next.player.find(x => x.id === botId);
+    if (!b || b.hp <= 0 || b.actedThisRound) return;
+    const recharge = Math.max(1, Math.round(b.maxBattery * 0.05));
+    b.bat = Math.min(b.maxBattery, b.bat + recharge);
+    b.actedThisRound = true;
+    next.message = { text: `${b.firstName}: SELF-CHARGE +${recharge} BAT`, emphasis: 'super' };
+    dispatch({ type: 'COMBAT_REPLACE', combat: next });
+    setTimeout(() => checkRoundEnd(next), 700);
+  }, [state.combat, dispatch]);
+
+  // ---- abandon fight: forfeit. In a tournament, this also clears bracket progress. ----
+  const abandon = useCallback(() => {
+    const cs = state.combat;
+    if (!cs) return;
+    // Mark all player bots as defeated and finalize as a loss
+    const next = cloneCombat(cs);
+    for (const b of next.player) b.hp = 0;
+    next.message = { text: 'YOU ABANDONED THE FIGHT', emphasis: 'miss' };
+    dispatch({ type: 'COMBAT_REPLACE', combat: next });
+    setTimeout(() => finalize(next, false), 800);
   }, [state.combat, dispatch]);
 
   // ---- after every action, check if round ends, enemies act, win/loss --
@@ -360,6 +429,12 @@ export function useBattleOrchestrator() {
     const baseFlags = won ? (battle.onWinFlags ?? []) : (battle.onLossFlags ?? []);
     const allFlags = [...baseFlags, ...championFlagsToAdd];
 
+    // Snapshot player HP+BAT for tournament carry-over (used by APPLY_REWARDS)
+    const playerEndState: Record<string, { hp: number; bat: number }> = {};
+    for (const b of cs.player) {
+      playerEndState[b.id] = { hp: Math.max(0, b.hp), bat: Math.max(0, b.bat) };
+    }
+
     const data: PostFightData = {
       won,
       prize,
@@ -380,6 +455,7 @@ export function useBattleOrchestrator() {
       lootDrops,
       materialDrops,
       isTournamentMidBracket: isEventMidBracket && event?.retryablePerFight === false,
+      playerEndState,
       nextSceneId: won ? battle.onWinSceneId : battle.onLossSceneId,
       flagsToSet: allFlags.length ? allFlags : undefined,
       cityToUnlock: championCityToUnlock ?? (won ? battle.unlockCityId : undefined),
@@ -418,9 +494,11 @@ export function useBattleOrchestrator() {
       }
     }
 
-    // Tournament auto-chain: if this is a non-retryable event with more fights, queue next
+    // Tournament mid-bracket: apply rewards (saves HP/BAT carry-over and
+    // bumps tournament progress), queue the next battle, then route to the
+    // between-fight screen so the player can use items, see roster status, or
+    // abandon. Pressing NEXT FIGHT there calls startBattle() directly.
     if (d.isTournamentMidBracket && event && event.retryablePerFight === false) {
-      dispatch({ type: 'APPLY_REWARDS' });
       const nextIdx = fightIdx + 1;
       const next = event.bracket[nextIdx];
       const trainer = next.trainerId ? ALL_TRAINERS[next.trainerId] : null;
@@ -439,36 +517,11 @@ export function useBattleOrchestrator() {
         eventId: event.id,
         eventFightIndex: nextIdx,
       };
-      const teamIds = d.participants;
-      const mentorBonuses = calcMentorBonuses(state.crew);
-      const playerTeamRaw = teamIds
-        .map(id => state.bots.find(b => b.id === id))
-        .filter((b): b is Bot => Boolean(b));
-      const player = playerTeamRaw.map(b => makeCombatBot(b, mentorBonuses, 'player'));
-      const opp: CombatBot[] = [];
-      for (let i = 0; i < nextBattle.teamSize; i++) {
-        const oppBot = generateOpponent({
-          level: nextBattle.oppLevel,
-          rankId: nextBattle.oppRank,
-          forceModelId: i === 0 ? nextBattle.forceModelId : undefined,
-          forceFirstName: i === 0 ? nextBattle.forceFirstName : undefined,
-        });
-        opp.push(makeCombatBot(oppBot, { attack: 0, defense: 0, speed: 0 }, 'opp'));
-      }
-      const combat: CombatRuntime = {
-        player, opp,
-        battleRound: 1,
-        phase: 'player_select',
-        action: null, selectedBot: null, selectedAttack: null,
-        isSignature: false, selectedItem: null,
-        message: { text: `— FIGHT ${nextIdx + 1} —` },
-        summary: { dmgDealt: 0, dmgTaken: 0, hits: 0, crits: 0, sigsUsed: 0, statusDamage: 0 },
-        playerSelectedIds: teamIds,
-        source: battle!.source,
-        sourceId: event.id,
-      };
+      dispatch({ type: 'APPLY_REWARDS' });
+      dispatch({ type: 'TOURNAMENT_NEXT_ROUND' });
       dispatch({ type: 'QUEUE_BATTLE', battle: nextBattle });
-      dispatch({ type: 'COMBAT_SET', combat });
+      dispatch({ type: 'SET_BATTLE_TEAM', botIds: d.participants });
+      dispatch({ type: 'GO_SCENE', scene: 'tournament_between' });
       return;
     }
 
@@ -479,7 +532,7 @@ export function useBattleOrchestrator() {
     dispatch({ type: 'GO_SCENE', scene: 'location' });
   }, [state.postFight, state.pendingBattle, state.bots, state.crew, dispatch]);
 
-  return { startBattle, pickTarget, pickItem, defend, ackPostFight };
+  return { startBattle, pickTarget, pickItem, defend, selfRepair, selfCharge, abandon, ackPostFight };
 }
 
 function cloneCombat(cs: CombatRuntime): CombatRuntime {

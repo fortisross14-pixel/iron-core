@@ -5,6 +5,10 @@ import { FACTIONS } from '../data/factions';
 import type { FactionId } from '../data/factions';
 import type { MechaType } from '../data/types';
 import type { Bot, CrewMember, FinalStats, StatTarget } from './types';
+import { getBattery } from '../data/batteries';
+
+/** Maximum battery capacity for a bot based on its equipped cell. */
+export const maxBatteryOf = (bot: Pick<Bot, 'battery'>): number => getBattery(bot.battery).capacity;
 
 /** Disk capacity scales with level. */
 export const getDiskCapacity = (bot: Bot): number => bot.level * 3;
@@ -52,7 +56,10 @@ export function getBotStats(
   const model = MODELS[bot.modelId];
   if (!model) return { attack: 0, defense: 0, speed: 0, intelligence: 0 };
 
-  const levelMult = 1 + (bot.level - 1) * 0.08;
+  // 5% per level — tuned so type effectiveness (1.5x-2x) outweighs small level
+  // gaps. ~3 levels of advantage roughly compensates for one type weakness;
+  // 5+ levels overcomes most type matchups.
+  const levelMult = 1 + (bot.level - 1) * 0.05;
   let attack = model.baseStats.attack * levelMult;
   let defense = model.baseStats.defense * levelMult;
   let speed = model.baseStats.speed * levelMult;

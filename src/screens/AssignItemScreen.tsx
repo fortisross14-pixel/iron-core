@@ -6,6 +6,7 @@ import { theme } from '../styles/theme';
 import { MODELS } from '../data/models';
 import { WEAPONS } from '../data/weapons';
 import { ARMORS } from '../data/armors';
+import { BATTERIES, getBattery } from '../data/batteries';
 import { DISKS } from '../data/disks';
 import { TYPE_INFO } from '../data/types';
 import { getBotType, getDiskCapacity } from '../game/stats';
@@ -67,6 +68,27 @@ export function AssignItemScreen() {
             </Button>
             {bot.armor && (
               <Button small variant="danger" onClick={() => dispatch({ type: 'ASSIGN_UNEQUIP', botId: bot.id, category: 'armor' })}>
+                UNEQUIP
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* BATTERY SLOT */}
+        <div style={slotStyle}>
+          <div style={slotLabelStyle}>BATTERY</div>
+          <div style={slotValueStyle}>
+            {(() => {
+              const bat = getBattery(bot.battery);
+              return <>{bat.name} <span style={{ color: theme.color.info, fontSize: theme.size.tiny }}>({bat.capacity} cap)</span></>;
+            })()}
+          </div>
+          <div style={slotBtnRowStyle}>
+            <Button small variant="secondary" onClick={() => dispatch({ type: 'ASSIGN_CATEGORY', category: 'battery' })}>
+              {bot.battery ? 'SWAP' : 'UPGRADE'}
+            </Button>
+            {bot.battery && (
+              <Button small variant="danger" onClick={() => dispatch({ type: 'ASSIGN_UNEQUIP', botId: bot.id, category: 'battery' })}>
                 UNEQUIP
               </Button>
             )}
@@ -144,6 +166,32 @@ export function AssignItemScreen() {
                 </div>
                 <Button small onClick={() => {
                   dispatch({ type: 'ASSIGN_EQUIP', botId: bot.id, category: 'armor', itemId: id });
+                  dispatch({ type: 'ASSIGN_CATEGORY', category: null as any });
+                }}>
+                  EQUIP
+                </Button>
+              </div>
+            );
+          })}
+        </>
+      )}
+
+      {ctx.category === 'battery' && (
+        <>
+          {Object.entries(state.batteryInv).filter(([, c]) => c > 0).length === 0 ? (
+            <div style={emptyStyle}>No spare batteries in inventory. Buy upgrades at a store.</div>
+          ) : Object.entries(state.batteryInv).map(([id, count]) => {
+            if (count <= 0) return null;
+            const bat = BATTERIES[id];
+            if (!bat) return null;
+            return (
+              <div key={id} style={itemRowStyle}>
+                <div style={{ flex: 1 }}>
+                  <div style={itemNameStyle}>{bat.name} <span style={ownedStyle}>×{count}</span></div>
+                  <div style={itemDescStyle}>{bat.desc} · <span style={{ color: theme.color.info }}>{bat.capacity} capacity</span></div>
+                </div>
+                <Button small onClick={() => {
+                  dispatch({ type: 'ASSIGN_EQUIP', botId: bot.id, category: 'battery', itemId: id });
                   dispatch({ type: 'ASSIGN_CATEGORY', category: null as any });
                 }}>
                   EQUIP

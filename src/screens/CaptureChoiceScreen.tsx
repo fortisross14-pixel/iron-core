@@ -15,6 +15,7 @@ import { CSSProperties } from 'react';
 import { useGame } from '../state/GameStore';
 import { Shell } from '../components/Shell';
 import { Button } from '../components/Button';
+import { MechaFull } from '../components/MechaPortrait';
 import { theme } from '../styles/theme';
 import { MODELS, RARITY_INFO } from '../data/models';
 import { TYPE_INFO } from '../data/types';
@@ -34,24 +35,27 @@ export function CaptureChoiceScreen() {
       <div style={titleStyle}>WILD DEFEATED</div>
       <div style={subStyle}>{model.surname.toUpperCase()} stands down. What do you do with it?</div>
 
-      <div style={{ ...mechaCardStyle, borderColor: tColor }}>
-        <div style={mechaHeaderStyle}>
-          <div style={mechaNameStyle}>{model.surname}</div>
-          <div style={{ ...mechaTypeStyle, color: tColor, borderColor: tColor }}>
-            {TYPE_INFO[model.type].name}
+      <div style={{ ...mechaCardStyle, borderColor: tColor, display: 'flex', gap: 12, alignItems: 'stretch' }}>
+        <MechaFull modelId={model.id} size="md" />
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+          <div style={mechaHeaderStyle}>
+            <div style={mechaNameStyle}>{model.surname}</div>
+            <div style={{ ...mechaTypeStyle, color: tColor, borderColor: tColor }}>
+              {TYPE_INFO[model.type].name}
+            </div>
           </div>
-        </div>
-        <div style={mechaSubStyle}>
-          <span style={{ color: RARITY_INFO[model.rarity].color }}>{RARITY_INFO[model.rarity].name}</span>
-          <span> · LV {pending.level} · {model.role}</span>
-        </div>
-        <div style={mechaFlavorStyle}>{model.flavor}</div>
+          <div style={mechaSubStyle}>
+            <span style={{ color: RARITY_INFO[model.rarity].color }}>{RARITY_INFO[model.rarity].name}</span>
+            <span> · LV {pending.level} · {model.role}</span>
+          </div>
+          <div style={mechaFlavorStyle}>{model.flavor}</div>
 
-        {alreadyOwn && (
-          <div style={alreadyOwnStyle}>
-            ⚠ You already have a {model.surname}. Only one per model — must salvage.
-          </div>
-        )}
+          {alreadyOwn && (
+            <div style={alreadyOwnStyle}>
+              ⚠ You already have a {model.surname}. Only one per model — must salvage.
+            </div>
+          )}
+        </div>
       </div>
 
       <div style={choicesStyle}>

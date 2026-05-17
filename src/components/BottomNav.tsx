@@ -17,9 +17,10 @@ import { useCityPalette } from '../styles/cityPalette';
 import type { Scene } from '../state/types';
 
 const TABS: { scene: Scene; label: string; icon: string }[] = [
+  { scene: 'me',      label: 'ME',      icon: '⏃' },
   { scene: 'town',    label: 'MAP',     icon: '◯' },
   { scene: 'stable',  label: 'STABLE',  icon: '◆' },
-  { scene: 'ranking', label: 'RANKING', icon: '◇' },
+  { scene: 'ranking', label: 'RANK',    icon: '◇' },
   { scene: 'medals',  label: 'MEDALS',  icon: '✦' },
 ];
 

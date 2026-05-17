@@ -1,4 +1,4 @@
-import { CSSProperties } from 'react';
+import { CSSProperties, useState } from 'react';
 import { useGame } from '../state/GameStore';
 import { useBattleOrchestrator } from '../hooks/useBattleOrchestrator';
 import { PartyBotMini } from '../components/PartyBotMini';
@@ -13,8 +13,9 @@ import { getActiveAttacks, getSignatureAttack } from '../game/combat';
 export function CombatScreen() {
   const { state, dispatch } = useGame();
   const palette = useCityPalette();
-  const { pickTarget, pickItem, defend } = useBattleOrchestrator();
+  const { pickTarget, pickItem, defend, selfRepair, selfCharge, abandon } = useBattleOrchestrator();
   const cs = state.combat;
+  const [showOther, setShowOther] = useState(false);
   if (!cs) return null;
 
   const playerActable = cs.player.filter(b => b.hp > 0 && !b.actedThisRound);
@@ -68,11 +69,15 @@ export function CombatScreen() {
       <div style={partyStyle}>
         <div style={partyLabelStyle}>OPPONENTS</div>
         <div style={partyGridStyle}>
-          {cs.opp.map(b => (
-            <PartyBotMini key={b.id} bot={b} side="opp"
-              isTargetable={cs.phase === 'target_choose'}
-              onTap={() => cs.phase === 'target_choose' && pickTarget(b.id)} />
-          ))}
+          {cs.opp.map(b => {
+            const atk = cs.selectedAttack ? ATTACKS[cs.selectedAttack] : null;
+            const targetable = cs.phase === 'target_choose' && !atk?.allyTarget;
+            return (
+              <PartyBotMini key={b.id} bot={b} side="opp"
+                isTargetable={targetable}
+                onTap={() => targetable && pickTarget(b.id)} />
+            );
+          })}
         </div>
       </div>
 
@@ -89,19 +94,29 @@ export function CombatScreen() {
       <div style={partyStyle}>
         <div style={partyLabelStyle}>YOUR TEAM</div>
         <div style={partyGridStyle}>
-          {cs.player.map(b => (
-            <PartyBotMini key={b.id} bot={b} side="player"
-              isCurrent={cs.selectedBot === b.id}
-              isPickable={cs.phase === 'bot_choose'}
-              onTap={() => {
-                if (cs.phase !== 'bot_choose') return;
-                if (cs.action === 'defend') {
-                  defend(b.id);
-                } else {
-                  dispatch({ type: 'COMBAT_PICK_BOT', botId: b.id });
-                }
-              }} />
-          ))}
+          {cs.player.map(b => {
+            const atk = cs.selectedAttack ? ATTACKS[cs.selectedAttack] : null;
+            const allyTargetable = cs.phase === 'target_choose' && atk?.allyTarget && b.id !== cs.selectedBot && b.hp > 0;
+            return (
+              <PartyBotMini key={b.id} bot={b} side="player"
+                isCurrent={cs.selectedBot === b.id}
+                isPickable={cs.phase === 'bot_choose'}
+                isTargetable={!!allyTargetable}
+                onTap={() => {
+                  if (allyTargetable) { pickTarget(b.id); return; }
+                  if (cs.phase !== 'bot_choose') return;
+                  if (cs.action === 'defend') {
+                    defend(b.id);
+                  } else if (cs.action === 'self_repair') {
+                    selfRepair(b.id);
+                  } else if (cs.action === 'self_charge') {
+                    selfCharge(b.id);
+                  } else {
+                    dispatch({ type: 'COMBAT_PICK_BOT', botId: b.id });
+                  }
+                }} />
+            );
+          })}
         </div>
       </div>
 
@@ -123,10 +138,35 @@ export function CombatScreen() {
               <span style={actionLabelStyle}>ITEM</span>
               <span style={actionSubStyle}>{Object.values(state.items).reduce((s, c) => s + c, 0)} bag</span>
             </button>
-            <button style={actionBtnStyle} onClick={() => dispatch({ type: 'COMBAT_PICK_ACTION', action: 'defend' })}>
-              <span style={actionLabelStyle}>DEFEND</span>
-              <span style={actionSubStyle}>+50% DEF</span>
+            <button style={actionBtnStyle} onClick={() => setShowOther(true)}>
+              <span style={actionLabelStyle}>OTHER</span>
+              <span style={actionSubStyle}>defend / repair / charge</span>
             </button>
+          </div>
+        )}
+
+        {showOther && (
+          <div style={otherMenuOverlayStyle} onClick={() => setShowOther(false)}>
+            <div style={otherMenuStyle} onClick={e => e.stopPropagation()}>
+              <div style={otherMenuTitleStyle}>OTHER ACTIONS</div>
+              <button style={otherOptStyle} onClick={() => { setShowOther(false); dispatch({ type: 'COMBAT_PICK_ACTION', action: 'defend' }); }}>
+                <span style={otherOptLabelStyle}>DEFEND</span>
+                <span style={otherOptDescStyle}>+30% DEF this round · free</span>
+              </button>
+              <button style={otherOptStyle} onClick={() => { setShowOther(false); dispatch({ type: 'COMBAT_PICK_ACTION', action: 'self_repair' }); }}>
+                <span style={otherOptLabelStyle}>SELF-REPAIR</span>
+                <span style={otherOptDescStyle}>+5% max HP · free</span>
+              </button>
+              <button style={otherOptStyle} onClick={() => { setShowOther(false); dispatch({ type: 'COMBAT_PICK_ACTION', action: 'self_charge' }); }}>
+                <span style={otherOptLabelStyle}>SELF-CHARGE</span>
+                <span style={otherOptDescStyle}>+5% max battery · free</span>
+              </button>
+              <button style={{ ...otherOptStyle, borderColor: theme.color.danger }} onClick={() => { setShowOther(false); if (confirm('Abandon the fight?')) { abandon(); } }}>
+                <span style={{ ...otherOptLabelStyle, color: theme.color.danger }}>ABANDON FIGHT</span>
+                <span style={otherOptDescStyle}>Forfeit. Tournament resets to round 1.</span>
+              </button>
+              <button style={otherCancelStyle} onClick={() => setShowOther(false)}>CANCEL</button>
+            </div>
           </div>
         )}
 
@@ -138,7 +178,10 @@ export function CombatScreen() {
             <div style={promptStyle}>
               {cs.action === 'attack' ? 'Tap a bot below to act with' :
                cs.action === 'item' ? 'Tap a bot below to use the item on' :
-               'Tap a bot below to brace'}
+               cs.action === 'defend' ? 'Tap a bot below to brace' :
+               cs.action === 'self_repair' ? 'Tap a bot below to self-repair (+5% HP)' :
+               cs.action === 'self_charge' ? 'Tap a bot below to self-charge (+5% BAT)' :
+               'Tap a bot below'}
             </div>
           </div>
         )}
@@ -174,16 +217,19 @@ export function CombatScreen() {
           </div>
         )}
 
-        {cs.phase === 'target_choose' && cs.selectedAttack && (
-          <div style={subMenuStyle}>
-            <button style={backBtnStyle} onClick={() => dispatch({ type: 'COMBAT_BACK', toPhase: 'attack_choose' })}>
-              ← BACK
-            </button>
-            <div style={promptStyle}>
-              {ATTACKS[cs.selectedAttack].name} → tap an opponent above
+        {cs.phase === 'target_choose' && cs.selectedAttack && (() => {
+          const atk = ATTACKS[cs.selectedAttack];
+          return (
+            <div style={subMenuStyle}>
+              <button style={backBtnStyle} onClick={() => dispatch({ type: 'COMBAT_BACK', toPhase: 'attack_choose' })}>
+                ← BACK
+              </button>
+              <div style={promptStyle}>
+                {atk.name} → tap {atk.allyTarget ? 'an ally below (not self)' : 'an opponent above'}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </div>
     </div>
   );
@@ -193,7 +239,7 @@ function AttackPicker({ bot, battleRound }: { bot: import('../game/combat').Comb
   const { dispatch } = useGame();
   const attacks = getActiveAttacks({ modelId: bot.modelId, learnedAttacks: bot.learnedAttacks });
   const sig = getSignatureAttack({ weapon: bot.weapon });
-  const sigOk = sig && battleRound >= 3 && bot.signatureUsesLeft > 0;
+  const sigOk = sig && battleRound >= 3 && bot.signatureUsesLeft > 0 && bot.bat >= sig.batteryCost;
   return (
     <div style={subMenuStyle}>
       <button style={backBtnStyle} onClick={() => dispatch({ type: 'COMBAT_BACK', toPhase: 'player_select' })}>
@@ -201,19 +247,32 @@ function AttackPicker({ bot, battleRound }: { bot: import('../game/combat').Comb
       </button>
       <div style={actingStyle}>
         ACTING: <span style={{ color: theme.color.accent }}>{bot.firstName}</span>
+        {' · '}<span style={{ color: theme.color.info }}>{bot.bat}/{bot.maxBattery} BAT</span>
       </div>
       <div style={attackListStyle}>
-        {attacks.map(a => (
-          <button key={a.id} style={attackOptionStyle} onClick={() => dispatch({ type: 'COMBAT_PICK_ATTACK', attackId: a.id, isSignature: false })}>
-            <div style={attackHeadStyle}>
-              <span style={attackNameStyle}>{a.name}</span>
-              <span style={{ ...attackTypeStyle, color: a.type === 'physical' ? theme.color.text : theme.typeColor[a.type] ?? theme.color.text }}>
-                {a.type.toUpperCase()}
-              </span>
-            </div>
-            <div style={attackStatsStyle}>PWR {a.power} · ACC {a.accuracy}%</div>
-          </button>
-        ))}
+        {attacks.map(a => {
+          const canAfford = bot.bat >= a.batteryCost;
+          return (
+            <button key={a.id} disabled={!canAfford}
+              style={{ ...attackOptionStyle, ...(canAfford ? {} : { opacity: 0.4, cursor: 'not-allowed' }) }}
+              onClick={() => canAfford && dispatch({ type: 'COMBAT_PICK_ATTACK', attackId: a.id, isSignature: false })}>
+              <div style={attackHeadStyle}>
+                <span style={attackNameStyle}>{a.name}{a.allyTarget && ' →ally'}</span>
+                <span style={{ ...attackTypeStyle, color: a.type === 'physical' ? theme.color.text : theme.typeColor[a.type] ?? theme.color.text }}>
+                  {a.type.toUpperCase()}
+                </span>
+              </div>
+              <div style={attackStatsStyle}>
+                {a.allyTarget && a.chargeRestore ? `+${a.chargeRestore} BAT` : `PWR ${a.power}`}
+                {' · '}ACC {a.accuracy}%
+                <span style={{ color: theme.color.info, marginLeft: 6 }}>· {a.batteryCost} BAT</span>
+              </div>
+              {!canAfford && (
+                <div style={lockHintStyle}>Not enough battery</div>
+              )}
+            </button>
+          );
+        })}
         {sig && (
           <button
             disabled={!sigOk}
@@ -227,10 +286,13 @@ function AttackPicker({ bot, battleRound }: { bot: import('../game/combat').Comb
             </div>
             <div style={attackStatsStyle}>
               PWR {sig.power} · ACC {sig.accuracy}% · {bot.signatureUsesLeft}/2 uses
+              <span style={{ color: theme.color.info, marginLeft: 6 }}>· {sig.batteryCost} BAT</span>
             </div>
             {!sigOk && (
               <div style={lockHintStyle}>
-                {battleRound < 3 ? `Unlocks round 3 (now: ${battleRound})` : 'Out of uses'}
+                {battleRound < 3 ? `Unlocks round 3 (now: ${battleRound})` :
+                 bot.signatureUsesLeft <= 0 ? 'Out of uses' :
+                 bot.bat < sig.batteryCost ? `Needs ${sig.batteryCost} battery (have ${bot.bat})` : 'Locked'}
               </div>
             )}
           </button>
@@ -424,3 +486,68 @@ const attackStatsStyle: CSSProperties = { fontFamily: theme.font.mono, fontSize:
 const attackDescStyle: CSSProperties = { fontSize: 10, color: theme.color.textMuted, fontStyle: 'italic' };
 const emptyBagStyle: CSSProperties = { padding: 12, textAlign: 'center', color: theme.color.textDim, fontSize: theme.size.small };
 const lockHintStyle: CSSProperties = { fontFamily: theme.font.mono, fontSize: 9, color: theme.color.danger, marginTop: 4, letterSpacing: theme.letter.tight };
+
+// ----- OTHER menu modal -----
+const otherMenuOverlayStyle: CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  background: 'rgba(0,0,0,0.85)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  zIndex: 500,
+  padding: 16,
+};
+const otherMenuStyle: CSSProperties = {
+  width: '100%',
+  maxWidth: 360,
+  background: theme.color.bgRaised,
+  border: `1px solid ${theme.color.accent}`,
+  padding: 16,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 6,
+};
+const otherMenuTitleStyle: CSSProperties = {
+  fontFamily: theme.font.display,
+  fontSize: theme.size.h3,
+  letterSpacing: theme.letter.wider,
+  color: '#fff',
+  textAlign: 'center',
+  marginBottom: 6,
+};
+const otherOptStyle: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  gap: 2,
+  padding: '10px 12px',
+  background: theme.color.bgSunken,
+  border: `1px solid ${theme.color.border}`,
+  color: theme.color.text,
+  fontFamily: theme.font.body,
+  textAlign: 'left',
+  cursor: 'pointer',
+};
+const otherOptLabelStyle: CSSProperties = {
+  fontFamily: theme.font.display,
+  fontSize: theme.size.body,
+  letterSpacing: theme.letter.wide,
+  color: '#fff',
+};
+const otherOptDescStyle: CSSProperties = {
+  fontSize: 10,
+  color: theme.color.textDim,
+  fontStyle: 'italic',
+};
+const otherCancelStyle: CSSProperties = {
+  marginTop: 6,
+  padding: '8px',
+  background: 'transparent',
+  border: `1px solid ${theme.color.border}`,
+  color: theme.color.textMuted,
+  fontFamily: theme.font.mono,
+  fontSize: theme.size.tiny,
+  letterSpacing: theme.letter.wide,
+  cursor: 'pointer',
+};

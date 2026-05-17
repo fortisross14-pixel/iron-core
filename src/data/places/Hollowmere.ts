@@ -26,9 +26,10 @@ export const HOLLOWMERE_PLACES: Place[] = [
     desc: 'The largest open-air market on the coast. Imports, rare disks, custom armor.',
     requires: { storyFlags: ['halloran_defeated'] },
     inventory: {
-      items: ['repair_kit', 'shield_cell', 'overclock'],
+      items: ['repair_kit', 'shield_cell', 'overclock', 'battery_kit', 'heavy_battery_kit'],
       weapons: ['rail_carbine', 'cinder_cannon', 'tide_blaster', 'thunder_rod', 'cryo_coil'],
       disks: ['stat_atk_2', 'stat_def_2', 'stat_spd_2', 'atk_disk_ember', 'atk_disk_jet', 'atk_disk_frost'],
+      batteries: ['industrial_cell', 'tournament_cell', 'legendary_core'],
     },
     sellMultiplier: 0.6,
   },

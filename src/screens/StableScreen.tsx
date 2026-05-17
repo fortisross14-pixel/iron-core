@@ -5,7 +5,7 @@ import { Button } from '../components/Button';
 import { theme } from '../styles/theme';
 import { useCityPalette } from '../styles/cityPalette';
 import { BracketLabel, EdgeBand } from '../components/Frame';
-import { MechaPortrait } from '../components/MechaPortrait';
+import { MechaMini } from '../components/MechaPortrait';
 import { MODELS, MODEL_LIST, TOTAL_DEX, RARITY_INFO } from '../data/models';
 import { WEAPONS } from '../data/weapons';
 import { ARMORS } from '../data/armors';
@@ -111,7 +111,7 @@ function RosterTab() {
             )}
             <button style={{ ...cardHeadStyle, display: 'grid', gridTemplateColumns: '48px 1fr auto', gap: 10, alignItems: 'center' }}
               onClick={() => setExpandedId(isOpen ? null : bot.id)}>
-              <MechaPortrait modelId={bot.modelId} size="sm" />
+              <MechaMini modelId={bot.modelId} size="sm" />
               <div style={{ minWidth: 0 }}>
                 <div style={nameStyle}>
                   {getBotFullName(bot)}
@@ -256,7 +256,7 @@ function CollectionTab() {
             ...(owned ? { borderColor: tColor + '60' } : { opacity: 0.45 }),
           }}>
             <div style={dexNoStyle}>#{String(m.dexNo).padStart(3, '0')}</div>
-            {owned ? <MechaPortrait modelId={m.id} size="sm" /> : <div style={lockedPortraitStyle} />}
+            {owned ? <MechaMini modelId={m.id} size="sm" /> : <div style={lockedPortraitStyle} />}
             <div style={dexBodyStyle}>
               {owned ? (
                 <>

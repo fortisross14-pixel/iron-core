@@ -12,10 +12,11 @@ export function GateLocationView({ locationId }: { locationId: string }) {
 
   const fightFirst = () => {
     const battle: PendingBattle = {
-      source: 'story',
+      source: 'trainer',
       sourceId: 'krait_first_fight',
+      trainerId: 'krait',
       oppLevel: 3, oppRank: 'competitor',
-      teamSize: 1,
+      teamSize: 2,
       forceModelId: 'scrap_grunt',
       forceFirstName: 'Krait',
       prize: 0,
@@ -34,10 +35,11 @@ export function GateLocationView({ locationId }: { locationId: string }) {
 
   const rematch = () => {
     const battle: PendingBattle = {
-      source: 'story',
+      source: 'trainer',
       sourceId: 'krait_rematch',
+      trainerId: 'krait',
       oppLevel: 3, oppRank: 'competitor',
-      teamSize: 1,
+      teamSize: 2,
       forceModelId: 'scrap_grunt',
       forceFirstName: 'Krait',
       prize: 300,

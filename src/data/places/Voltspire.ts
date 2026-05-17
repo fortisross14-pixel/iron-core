@@ -25,9 +25,10 @@ export const VOLTSPIRE_PLACES: Place[] = [
     desc: 'Better selection than Ironhaven. Real weapons, rare disks, contract chips for new chassis.',
     requires: { storyFlags: ['krait_rematch_won'] },
     inventory: {
-      items: ['repair_kit', 'shield_cell', 'overclock'],
+      items: ['repair_kit', 'shield_cell', 'overclock', 'small_battery_kit', 'battery_kit', 'heavy_battery_kit'],
       weapons: ['iron_fist', 'rail_carbine', 'thunder_rod'],
       disks: ['stat_atk_1', 'stat_def_1', 'stat_spd_1', 'stat_atk_2', 'atk_disk_jab', 'atk_disk_spark'],
+      batteries: ['reinforced_cell', 'heavy_cell', 'industrial_cell'],
     },
     sellMultiplier: 0.5,
   },

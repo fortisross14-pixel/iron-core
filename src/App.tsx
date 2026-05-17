@@ -12,6 +12,8 @@ import { StableScreen } from './screens/StableScreen';
 import { AssignItemScreen } from './screens/AssignItemScreen';
 import { RankingScreen } from './screens/RankingScreen';
 import { MedalsScreen } from './screens/MedalsScreen';
+import { MeScreen } from './screens/MeScreen';
+import { TournamentBetweenScreen } from './screens/TournamentBetweenScreen';
 import { LearnMoveScreen } from './screens/LearnMoveScreen';
 import { CaptureChoiceScreen } from './screens/CaptureChoiceScreen';
 import { DialogOverlay } from './components/DialogOverlay';
@@ -70,6 +72,8 @@ export function App() {
     case 'assignItem':    body = <AssignItemScreen />; break;
     case 'ranking':       body = <RankingScreen />; break;
     case 'medals':        body = <MedalsScreen />; break;
+    case 'me':            body = <MeScreen />; break;
+    case 'tournament_between': body = <TournamentBetweenScreen />; break;
     case 'learnMove':     body = <LearnMoveScreen />; break;
     case 'captureChoice': body = <CaptureChoiceScreen />; break;
     default:              body = <IntroScreen />;
