@@ -1,128 +1,263 @@
+import type { Bot, CrewMember } from '../game/types';
+import type { FactionId } from '../data/factions';
+import type { CombatBot } from '../game/combat';
+
 /**
- * PLACES — buildings/locations within cities.
+ * Top-level scene determines which screen the App router renders.
  *
- * A place is any visitable in-city location. The PlaceKind enumerates the
- * categories you described:
- *
- *   - story_place:    no fight, unlocks events (e.g. uncle's workshop, your home)
- *   - grind_place:    train against wild mechas, get materials/XP, salvage or
- *                     capture (capture mechanic comes in Step 3d). Each grind
- *                     place has 2-3 mecha types in its spawn pool.
- *   - fight_story:    one-off story battles that grant fame/credits and unlock
- *                     more story (e.g. Smelter's Gate vs Krait)
- *   - tournament:     hosts one or more tournaments of various tiers
- *   - store:          buy/sell market with a curated inventory
- *   - faction_house:  per-faction reward fights + collection-based ranking
- *   - other:          unlockable bonus places (post-tournament, post-faction)
- *
- * Visual code lives in /screens/places/<Kind>PlaceView.tsx and reads its
- * config from this file. No screen file hardcodes place ids.
+ * 'town' is the city map. 'location' is a specific building/area within a city.
+ * 'dialog' overlays a story scene on top of whatever else is happening.
  */
+export type Scene =
+  | 'intro'
+  | 'starter'
+  | 'naming'
+  | 'faction_pick'
+  | 'town'
+  | 'location'
+  | 'combat'
+  | 'postfight'
+  | 'battleSetup'
+  | 'assignItem'
+  | 'stable'
+  | 'crew'
+  | 'ranking'
+  | 'medals'
+  | 'learnMove'
+  | 'captureChoice'
+  | 'me'
+  | 'tournament_between'
+  | 'levelUp';
 
-import type { FactionId } from '../factions';
+export type DialogStackItem = {
+  sceneId: string;
+  lineIndex: number;
+};
 
-export type PlaceKind =
-  | 'story_place'
-  | 'grind_place'
-  | 'fight_story'
-  | 'tournament'
-  | 'store'
-  | 'faction_house'
-  | 'other';
-
-export interface PlaceBase {
-  id: string;
-  cityId: string;
-  name: string;
-  shortDesc: string;              // shown in city list
-  desc: string;                   // shown on entry; supports atmosphere
-  kind: PlaceKind;
-  /** Story flags that must be set for this place to be visible in the city. */
-  requires?: { storyFlags?: string[]; };
+export interface PendingBattle {
+  // who the player is fighting and why
+  source: 'story' | 'junkyard' | 'tournament' | 'event' | 'trainer';
+  sourceId: string;          // story scene id, tournament id, etc.
+  oppLevel: number;
+  oppRank: string;
+  /** Player's team size CAP (max mechas they can field). Player can pick 1..teamSize. */
+  teamSize: number;
+  /** Opponent's team size. Defaults to `teamSize` when not specified.
+   *  Set explicitly when player cap differs from opp count (e.g. wild fights:
+   *  player up to 2, opp always 1). */
+  oppTeamSize?: number;
+  forceModelId?: string;
+  forceFirstName?: string;
+  prize: number;
+  xpReward: number;
+  fameReward?: number;       // fame paid on win, in addition to per-trainer fame
+  // who you're fighting (for trainer battles & fame attribution)
+  trainerId?: string;
+  // event context (for tier_test, tournament, gauntlet)
+  eventId?: string;
+  eventFightIndex?: number;    // 0-based
+  // for tournaments: array of fights to play through
+  tournamentBracket?: TournamentFight[];
+  // story hooks
+  onWinSceneId?: string;
+  onLossSceneId?: string;
+  onWinFlags?: string[];
+  onLossFlags?: string[];
+  unlockCityId?: string;
+  // for junkyard / grind places
+  isWild?: boolean;
+  wildModelId?: string;       // the actual model to spawn (capture target)
+  materialDropLevel?: number;
 }
 
-// --- story_place
-export interface StoryPlace extends PlaceBase {
-  kind: 'story_place';
-  /** Story scene that triggers when entered. (Optional — many story_places
-   *  trigger their scenes via existing useStoryTriggers flow.) */
-  entryScene?: string;
+export interface TournamentFight {
+  trainerId?: string;
+  forceModelId?: string;
+  forceFirstName?: string;
+  oppLevel: number;
+  fameReward: number;
 }
 
-// --- grind_place
-export interface GrindPlace extends PlaceBase {
-  kind: 'grind_place';
-  /** Wild mecha pool. Each spawn picks a random entry from this list. */
-  spawnPool: { modelId: string; weight?: number; minLevel: number; maxLevel: number }[];
-  /** Material ids that can drop here. */
-  materialPool: string[];
-  /** Disk drop chance per fight (e.g. 0.1 = 10%). */
-  diskDropChance: number;
-  /** Subset of disk ids that can drop here. */
-  diskPool: string[];
+export interface CombatRuntime {
+  player: CombatBot[];
+  opp: CombatBot[];
+  battleRound: number;
+  phase: CombatPhase;
+  action: CombatAction | null;
+  selectedBot: string | null;       // player bot id
+  selectedAttack: string | null;
+  isSignature: boolean;
+  selectedItem: string | null;
+  message: CombatMessage | null;    // mid-screen action message
+  summary: CombatSummary;
+  playerSelectedIds: string[];      // original ids picked at setup
+  tournamentRound?: number;
+  maxTournamentRound?: number;
+  source: PendingBattle['source'];
+  sourceId: string;
 }
 
-// --- fight_story
-export interface FightStoryPlace extends PlaceBase {
-  kind: 'fight_story';
-  /** Optional story scene's pending-battle id. Some gatekeepers use bespoke
-   *  view logic instead of a fixed scene. */
-  battleSceneId?: string;
+export type CombatPhase =
+  | 'player_select'        // top menu: ATTACK / ITEM / DEFEND
+  | 'bot_choose'           // pick which of your bots
+  | 'attack_choose'        // pick an attack
+  | 'item_choose'          // pick an item
+  | 'target_choose'        // pick an enemy to target
+  | 'enemy_turn'           // animating enemy turn
+  | 'round_end';
+
+export type CombatAction = 'attack' | 'item' | 'defend' | 'self_repair' | 'self_charge' | 'abandon';
+
+export interface CombatMessage {
+  text: string;
+  emphasis?: 'crit' | 'super' | 'resisted' | 'miss' | 'status';
 }
 
-// --- tournament
-export interface TournamentPlace extends PlaceBase {
-  kind: 'tournament';
-  /** Tournament event ids hosted at this place (defined in /data/tournaments.ts). */
-  tournamentIds: string[];
+export interface CombatSummary {
+  dmgDealt: number;
+  dmgTaken: number;
+  hits: number;
+  crits: number;
+  sigsUsed: number;
+  statusDamage: number;
 }
 
-// --- store
-export interface StorePlace extends PlaceBase {
-  kind: 'store';
-  /** Item / weapon / armor / disk / mecha ids on sale. The store screen reads
-   *  inventory from here and looks up prices/details from their respective
-   *  data files. */
-  inventory: {
-    items?: string[];
-    weapons?: string[];
-    armors?: string[];
-    disks?: string[];
-    batteries?: string[];
-    mechas?: string[];      // (for sale — Step 3c+)
+export interface PostFightData {
+  won: boolean;
+  prize: number;
+  xpReward: number;
+  fameGained: number;
+  defeatedTrainerId?: string;
+  /** Trainer fought regardless of outcome (sets encountered flag). */
+  encounteredTrainerId?: string;
+  /** Wild mecha captured (after victory in a grind fight). Triggers KEEP/SALVAGE prompt. */
+  wildModelId?: string;
+  wildLevel?: number;
+  source: PendingBattle['source'];
+  sourceId: string;
+  title: string;          // shown in result banner subtitle
+  participants: string[];
+  summary: CombatSummary;
+  lootDrops: LootDrop[];
+  materialDrops: { id: string; count: number }[];
+  modelReward?: string;
+  // for multi-round tournaments
+  isTournamentMidBracket?: boolean;
+  /** HP/BAT snapshot of player team after the fight, keyed by bot id.
+   *  Used to carry over state to the next tournament fight. */
+  playerEndState?: Record<string, { hp: number; bat: number }>;
+  // story hooks to fire after the result is acknowledged
+  nextSceneId?: string;
+  flagsToSet?: string[];
+  cityToUnlock?: string;
+}
+
+export type LootDrop =
+  | { kind: 'item'; id: string }
+  | { kind: 'weapon'; id: string }
+  | { kind: 'armor'; id: string }
+  | { kind: 'disk'; id: string };
+
+export interface ActiveTournament {
+  tournamentId: string;
+  bracketIndex: number;          // next fight to run
+  teamBotIds: string[];          // team picked once for the whole bracket
+  fameAccumulated: number;
+  prizeAccumulated: number;
+  /** HP/battery values to carry over from previous fight, keyed by bot id.
+   *  Set when a tournament fight ends; consumed when the next fight starts. */
+  carryOver?: Record<string, { hp: number; bat: number }>;
+}
+
+export interface GameState {
+  scene: Scene;
+  // dialog overlay (if active, renders on top of current scene)
+  dialogStack: DialogStackItem[];
+
+  // player identity (set on first 'Me' tab visit or via prologue later)
+  playerName: string;
+
+  // player & faction
+  factionId: FactionId | null;
+  // alignment moves with player actions on the (moral, posture) quadrant
+  alignment: { moral: number; posture: number };
+
+  // career / ranking
+  fame: number;
+  playerTier: import('../data/trainers').TrainerTier;
+  defeatedTrainerIds: Set<string>;
+  /** Trainers the player has fought (won OR lost). Drives Ranking screen visibility. */
+  encounteredTrainerIds: Set<string>;
+  /** Per-fight progress for multi-fight events. eventId → highest cleared fight index (zero-based). -1 means none cleared. */
+  eventProgress: Record<string, number>;
+  /** Number of times the player has fully won each tournament (champion). Used by the Medals tab. */
+  championWins: Record<string, number>;
+
+  // bots
+  bots: Bot[];
+  crew: CrewMember[];
+
+  // inventory
+  money: number;
+  weaponInv: Record<string, number>;
+  armorInv: Record<string, number>;
+  diskInv: Record<string, number>;
+  batteryInv: Record<string, number>;
+  items: Record<string, number>;
+  materials: Record<string, number>;
+  discovered: Set<string>;
+
+  // world state
+  storyFlags: Set<string>;
+  currentCityId: string;
+  currentLocationId: string | null;
+  unlockedCities: Set<string>;
+  unlockedTournaments: Set<string>;
+  unlockedFeatures: Set<string>;
+
+  // combat
+  pendingBattle: PendingBattle | null;
+  battleSetupTeam: string[];               // selected bot ids
+  combat: CombatRuntime | null;
+  postFight: PostFightData | null;
+  // active tournament context (if running a bracket)
+  activeTournament: ActiveTournament | null;
+  assignItemContext: { botId: string; category: 'weapon' | 'armor' | 'disk' | 'battery' | null } | null;
+
+  // naming flow (after starter pick OR after capture)
+  pendingNamingModelId: string | null;
+  pendingNamingIsStarter: boolean;
+  pendingCaptureLevel?: number;  // level to spawn the captured bot at (defaults to 1)
+
+  // move-learn queue: when bots level up and learn new attacks, each prompt
+  // is queued here. The first item drives the LearnMoveScreen.
+  pendingMoveLearns: { botId: string; newAttackId: string }[];
+
+  // level-up announcement queue: when a bot levels up, we capture a before/after
+  // snapshot so the LevelUpScreen can show what changed. Drained one at a time.
+  pendingLevelUps: {
+    botId: string;
+    newLevel: number;
+    /** Stats AT the level the bot was BEFORE leveling — for delta display. */
+    prevStats: { hp: number; attack: number; defense: number; speed: number; intelligence: number };
+    /** Stats AT the new level. */
+    newStats:  { hp: number; attack: number; defense: number; speed: number; intelligence: number };
+  }[];
+
+  // capture/salvage prompt after winning a grind fight against a wild mecha.
+  // null when no decision pending.
+  pendingCapture: { modelId: string; level: number } | null;
+
+  // toast
+  toast: string | null;
+  toastId: number;
+
+  // achievements & stats
+  achievements: {
+    undergroundWins: number;
+    officialWins: number;
+    eliteWins: number;
+    totalBattles: number;
+    junkyardWins: number;
   };
-  /** Multiplier on base sell price the player gets when selling here.
-   *  (0.4 in village, 0.5 in town, 0.6 in city is typical.) */
-  sellMultiplier: number;
 }
-
-// --- faction_house
-export interface FactionHousePlace extends PlaceBase {
-  kind: 'faction_house';
-  factionId: FactionId;
-  /** Coach ids for the fights this house offers (defined in /data/coaches.ts). */
-  challengeCoachIds: string[];
-  /** Exclusive weapons sold here at a 15% discount (faction members only).
-   *  Weapon ids reference /data/weapons.ts. Available only to faction members. */
-  storeWeapons?: string[];
-  /** Faction grind spawn pool — only mechas of the faction's preferred types,
-   *  scaled to the city tier (Voltspire = uncommon+rare, Hollowmere = rare+epic).
-   *  Available only to faction members. */
-  grindPool?: { modelId: string; weight?: number; minLevel: number; maxLevel: number }[];
-  /** Tournament event ids hosted here (faction-only tournaments).
-   *  Winning grants president-eligibility flag. */
-  factionTournamentIds?: string[];
-  /** The faction president for this house. Defeated → unlock president status. */
-  presidentCoachId?: string;
-}
-
-// --- other
-export interface OtherPlace extends PlaceBase {
-  kind: 'other';
-  /** Free-form unlock requirement description shown to the player. */
-  unlockHint?: string;
-}
-
-export type Place =
-  | StoryPlace | GrindPlace | FightStoryPlace
-  | TournamentPlace | StorePlace | FactionHousePlace | OtherPlace;

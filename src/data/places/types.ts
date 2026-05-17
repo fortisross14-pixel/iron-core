@@ -65,8 +65,9 @@ export interface GrindPlace extends PlaceBase {
 // --- fight_story
 export interface FightStoryPlace extends PlaceBase {
   kind: 'fight_story';
-  /** Which story scene's pending-battle gets queued on the "fight" button. */
-  battleSceneId: string;
+  /** Optional story scene's pending-battle id. Some gatekeepers use bespoke
+   *  view logic instead of a fixed scene. */
+  battleSceneId?: string;
 }
 
 // --- tournament
