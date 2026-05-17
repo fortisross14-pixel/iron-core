@@ -158,7 +158,9 @@ export function Shell({ children, showHeader = true, showFooter = false, footer,
             </div>
           </div>
           <div style={headerLine2Style}>
-            <BracketLabel>{pageLabel ?? (city ? city.name.toUpperCase() : 'IRON CORE')}</BracketLabel>
+            {pageLabel !== '' && (
+              <BracketLabel>{pageLabel ?? (city ? city.name.toUpperCase() : 'IRON CORE')}</BracketLabel>
+            )}
             <ConnectionStamp seed={state.currentCityId ?? 'sys'} />
           </div>
         </header>

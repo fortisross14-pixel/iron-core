@@ -106,7 +106,7 @@ export function CityFull({ cityId, greyed = false, style }: FullProps) {
     height: '100%',
     objectFit: 'cover',
     display: loaded && !errored ? 'block' : 'none',
-    filter: greyed ? 'grayscale(85%) brightness(0.4) contrast(1.1)' : 'none',
+    filter: greyed ? 'grayscale(70%) brightness(0.55) contrast(1.05)' : 'none',
     transition: 'filter 0.3s',
   };
   const placeholder: CSSProperties = {
@@ -125,7 +125,7 @@ export function CityFull({ cityId, greyed = false, style }: FullProps) {
     ? {
         position: 'absolute',
         inset: 0,
-        background: `linear-gradient(180deg, ${palette.c5}cc 0%, ${palette.c5}99 50%, ${palette.c5}ff 100%)`,
+        background: `linear-gradient(180deg, ${palette.c5}88 0%, ${palette.c5}55 50%, ${palette.c5}cc 100%)`,
         pointerEvents: 'none',
       }
     : undefined;
@@ -163,7 +163,7 @@ export function CityBackdrop({ cityId }: { cityId: string }) {
         height: '100%',
         aspectRatio: undefined,
         border: 'none',
-        opacity: 0.6,
+        opacity: 0.85,
       }} />
     </div>
   );

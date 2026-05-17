@@ -147,25 +147,26 @@ export function TownScreen() {
   };
 
   return (
-    <Shell pageLabel={city.name.toUpperCase()}>
+    <Shell pageLabel="">
       <CityBackdrop cityId={city.id} />
       <button onClick={() => setView('world')} style={backStyle(palette)}>← WORLD MAP</button>
 
-      <div style={cityHeaderStyle}>
-        <div style={cityHeaderLeftStyle}>
-          <CityMini cityId={city.id} size={56} borderColor={palette.c1} />
-          <div>
-            <div style={titleStyle(palette)}>{city.name}</div>
-            <div style={{ ...subtitleStyle(palette), marginTop: 2 }}>{city.region}</div>
+      <div style={cityInfoCardStyle(palette)}>
+        <div style={cityInfoHeadStyle}>
+          <CityMini cityId={city.id} size={72} borderColor={palette.c1} />
+          <div style={cityInfoTitleStyle}>
+            <div style={cityInfoNameStyle(palette)}>
+              {city.name}
+              <span style={{ ...cityTierBadgeStyle, color: palette.c2, borderColor: palette.c1 }}>
+                {CITY_TIER_LABEL[city.tier]}
+              </span>
+            </div>
+            <div style={cityInfoRegionStyle(palette)}>{city.region}</div>
           </div>
         </div>
-        <span style={{ ...cityTierBadgeStyle, color: palette.c2, borderColor: palette.c1 }}>
-          {CITY_TIER_LABEL[city.tier]}
-        </span>
-      </div>
-      <EdgeBand color={palette.c1} />
-      <div style={cityLongDescStyle(palette)}>
-        {city.longDesc}
+        <div style={cityInfoDescStyle}>
+          {city.longDesc}
+        </div>
       </div>
 
       <div style={{ marginBottom: theme.space.sm }}>
@@ -379,12 +380,44 @@ const backStyle = (p: { c3: string }): CSSProperties => ({
   letterSpacing: theme.letter.wide,
   cursor: 'pointer', padding: 0, marginBottom: theme.space.md,
 });
-const cityHeaderStyle: CSSProperties = {
-  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-  marginBottom: theme.space.sm, gap: theme.space.md,
+const cityInfoCardStyle = (p: { c1: string; c3: string; c5: string }): CSSProperties => ({
+  position: 'relative',
+  padding: theme.space.md,
+  marginBottom: theme.space.md,
+  background: `linear-gradient(180deg, ${p.c5}d0 0%, ${theme.color.bgRaised}cc 100%)`,
+  border: `1px solid ${p.c1}60`,
+  borderLeft: `3px solid ${p.c1}`,
+});
+const cityInfoHeadStyle: CSSProperties = {
+  display: 'flex', alignItems: 'center', gap: 14,
+  marginBottom: theme.space.sm,
 };
-const cityHeaderLeftStyle: CSSProperties = {
-  display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 0,
+const cityInfoTitleStyle: CSSProperties = {
+  flex: 1, minWidth: 0,
+};
+const cityInfoNameStyle = (p: { c1: string }): CSSProperties => ({
+  fontFamily: theme.font.display,
+  fontSize: theme.size.h1,
+  letterSpacing: theme.letter.wider,
+  color: '#fff',
+  textShadow: `0 0 14px ${p.c1}80`,
+  display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+  lineHeight: 1.1,
+});
+const cityInfoRegionStyle = (p: { c3: string }): CSSProperties => ({
+  fontFamily: theme.font.mono,
+  fontSize: theme.size.tiny,
+  letterSpacing: theme.letter.wide,
+  color: p.c3,
+  marginTop: 4,
+});
+const cityInfoDescStyle: CSSProperties = {
+  fontFamily: theme.font.body,
+  fontSize: theme.size.small,
+  color: theme.color.text,
+  lineHeight: 1.6,
+  paddingTop: theme.space.sm,
+  borderTop: `1px solid ${theme.color.border}`,
 };
 const listStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 6 };
 const rowStyle: CSSProperties = {
