@@ -3,11 +3,13 @@ import { reducer } from './reducer';
 import { initialState } from './initialState';
 import type { GameState } from './types';
 import type { Action } from './actions';
-import { writeSave } from './saveLoad';
+import { writeSave, SaveSlot } from './saveLoad';
 
 interface StoreCtx {
   state: GameState;
   dispatch: (a: Action) => void;
+  /** The slot autosaves are written to. Surfaced for UI (e.g. ME screen). */
+  activeSlot: SaveSlot;
 }
 
 const Ctx = createContext<StoreCtx | null>(null);
@@ -15,19 +17,21 @@ const Ctx = createContext<StoreCtx | null>(null);
 /**
  * GameStore — global state provider.
  *
- * Optional `bootState` parameter lets the app load a saved game on mount.
- * If absent, starts from `initialState` (fresh game).
+ * `bootState` lets the app load a saved game on mount; absent = fresh game.
+ * `activeSlot` is the slot autosaves are written to.
  *
- * Autosave: every state change triggers a debounced (200ms) write to
- * localStorage. We skip the very first effect run since that's just
- * the initial bootState load — no point re-saving what we just read.
+ * Autosave: every state change triggers a debounced (200ms) write to the
+ * active slot. The very first effect run is skipped so loading a save
+ * doesn't immediately re-save it.
  */
-export function GameStore({ children, bootState }: { children: ReactNode; bootState?: GameState }) {
+export function GameStore({ children, bootState, activeSlot }: {
+  children: ReactNode;
+  bootState?: GameState;
+  activeSlot: SaveSlot;
+}) {
   const [state, dispatch] = useReducer(reducer, bootState ?? initialState);
-  const value = useMemo(() => ({ state, dispatch }), [state]);
+  const value = useMemo(() => ({ state, dispatch, activeSlot }), [state, activeSlot]);
 
-  // Autosave: write to localStorage 200ms after the most recent state change.
-  // The first run is skipped so loading a save doesn't immediately re-save it.
   const firstRun = useRef(true);
   const timerRef = useRef<number | null>(null);
   useEffect(() => {
@@ -39,7 +43,7 @@ export function GameStore({ children, bootState }: { children: ReactNode; bootSt
       clearTimeout(timerRef.current);
     }
     timerRef.current = window.setTimeout(() => {
-      writeSave(state);
+      writeSave(activeSlot, state);
       timerRef.current = null;
     }, 200);
     return () => {
@@ -48,7 +52,7 @@ export function GameStore({ children, bootState }: { children: ReactNode; bootSt
         timerRef.current = null;
       }
     };
-  }, [state]);
+  }, [state, activeSlot]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

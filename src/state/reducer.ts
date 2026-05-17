@@ -1,7 +1,7 @@
 import type { Action } from './actions';
 import type { GameState } from './types';
 import { initialState } from './initialState';
-import { createBot } from '../game/progression';
+import { createBot, xpToNext } from '../game/progression';
 import { WEAPONS } from '../data/weapons';
 import { ARMORS } from '../data/armors';
 import { BATTERIES, getBattery } from '../data/batteries';
@@ -800,12 +800,12 @@ export function reducer(state: GameState, action: Action): GameState {
         // XP (only if not already level 30)
         if (u.level < 30) {
           u.xp += xpPerBot;
-          while (u.xp >= u.xpToNext && u.level < 30) {
+          while (u.xpToNext > 0 && u.xp >= u.xpToNext && u.level < 30) {
             // Snapshot stats AT the current level before bumping
             const prevSnapshot = getBotStats(u);
             const prevHp = u.maxHp;
             const newLevel = u.level + 1;
-            u = { ...u, xp: u.xp - u.xpToNext, level: newLevel, xpToNext: newLevel * 100, maxHp: u.maxHp + 8 };
+            u = { ...u, xp: u.xp - u.xpToNext, level: newLevel, xpToNext: xpToNext(newLevel), maxHp: u.maxHp + 8 };
             // Snapshot stats at the NEW level
             const newSnapshot = getBotStats(u);
             levelUpAnnouncements.push({
