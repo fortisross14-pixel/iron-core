@@ -91,10 +91,14 @@ export const theme = {
     panel: '#0f0f12',
     border: '#1a1a1f',
     borderStrong: '#2a2a30',
+    ink: '#050505',
+    rust: '#9a4518',
+    grime: '#17110b',
+    scratch: '#fff2b060',
 
     // -- text --
-    text: '#e8e8e0',
-    textMuted: '#888',
+    text: '#f0ead8',
+    textMuted: '#9b9688',
     textDim: '#666',
     textVeryDim: '#444',
     textBlack: '#0a0a0c',
@@ -111,6 +115,8 @@ export const theme = {
     // we provide a neutral value here. The new way: useCityPalette().c1.
     accent: '#ffb800',
     accentDim: '#ffb80040',
+    cardYellow: '#ffd026',
+    cardOrange: '#ff7a2f',
   },
 
   // -- mecha type colors (unchanged — type identity is global) --
