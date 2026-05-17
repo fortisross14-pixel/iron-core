@@ -27,10 +27,17 @@ export function BattleSetupScreen() {
          battle.source === 'story' ? 'Story battle' : 'Skirmish'}
       </div>
       <div style={metaStyle}>
-        {battle.teamSize}v{battle.teamSize} · opp lv ~{battle.oppLevel}
+        UP TO {battle.teamSize}v{battle.teamSize} · opp lv ~{battle.oppLevel}
       </div>
 
-      <div style={sectionStyle}>PICK {battle.teamSize} BOT{battle.teamSize > 1 ? 'S' : ''} · {state.battleSetupTeam.length}/{battle.teamSize}</div>
+      <div style={sectionStyle}>
+        PICK 1-{battle.teamSize} {battle.teamSize > 1 ? 'BOTS' : 'BOT'} · {state.battleSetupTeam.length}/{battle.teamSize}
+      </div>
+      {battle.teamSize > 1 && (
+        <div style={hintStyle}>
+          Fewer mechas = harder fight, but it counts. The opponent fields {battle.teamSize}.
+        </div>
+      )}
 
       {state.bots.length === 0 ? (
         <div style={emptyStyle}>You have no bots. Visit your uncle.</div>
@@ -58,12 +65,20 @@ export function BattleSetupScreen() {
         );
       })}
 
-      <Button full disabled={state.battleSetupTeam.length !== battle.teamSize} onClick={startBattle} style={{ marginTop: theme.space.lg }}>
+      <Button full disabled={state.battleSetupTeam.length < 1 || state.battleSetupTeam.length > battle.teamSize} onClick={startBattle} style={{ marginTop: theme.space.lg }}>
         ENGAGE →
       </Button>
     </Shell>
   );
 }
+
+const hintStyle: CSSProperties = {
+  fontFamily: theme.font.body,
+  fontSize: theme.size.tiny,
+  color: theme.color.textMuted,
+  fontStyle: 'italic',
+  marginBottom: theme.space.sm,
+};
 
 const backStyle: CSSProperties = {
   background: 'transparent', border: 'none', color: theme.color.textMuted,

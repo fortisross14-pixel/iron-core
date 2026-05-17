@@ -37,7 +37,8 @@ export function useBattleOrchestrator() {
   const startBattle = useCallback(() => {
     if (!state.pendingBattle) return;
     const battle = state.pendingBattle;
-    if (state.battleSetupTeam.length !== battle.teamSize) return;
+    // Player picks 1-to-teamSize bots; teamSize is the CAP, not exact count.
+    if (state.battleSetupTeam.length < 1 || state.battleSetupTeam.length > battle.teamSize) return;
 
     const playerTeamRaw = state.battleSetupTeam
       .map(id => state.bots.find(b => b.id === id))
@@ -46,6 +47,9 @@ export function useBattleOrchestrator() {
     const mentorBonuses = calcMentorBonuses(state.crew);
     const carry = state.activeTournament?.carryOver;
     const player = playerTeamRaw.map(b => makeCombatBot(b, mentorBonuses, 'player', carry?.[b.id]));
+
+    // Look up the trainer to use their explicit team roster (if any).
+    const trainer = battle.trainerId ? ALL_TRAINERS[battle.trainerId] : null;
 
     const opp: CombatBot[] = [];
     for (let i = 0; i < battle.teamSize; i++) {
@@ -64,6 +68,15 @@ export function useBattleOrchestrator() {
         } else {
           oppBot = generateJunkyardWild(playerTeamRaw[0]?.level ?? 1);
         }
+      } else if (trainer && trainer.team[i]) {
+        // Use the trainer's actual team roster, slot by slot.
+        const slot = trainer.team[i];
+        oppBot = generateOpponent({
+          level: slot.level,
+          rankId: battle.oppRank,
+          forceModelId: slot.modelId,
+          forceFirstName: i === 0 ? trainer.firstName : undefined,
+        });
       } else if (i === 0 && battle.forceModelId) {
         oppBot = generateOpponent({
           level: battle.oppLevel,
