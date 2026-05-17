@@ -23,7 +23,7 @@ import { theme, CITY_PALETTES, NEUTRAL_PALETTE } from '../styles/theme';
 import { useCityPalette, PaletteOverride } from '../styles/cityPalette';
 import { Shell } from '../components/Shell';
 import { Frame, BracketLabel, EdgeBand } from '../components/Frame';
-import { CityMini, CityFull } from '../components/CityImage';
+import { CityMini, CityFull, CityBackdrop } from '../components/CityImage';
 
 type View = 'world' | 'city';
 
@@ -148,6 +148,7 @@ export function TownScreen() {
 
   return (
     <Shell pageLabel={city.name.toUpperCase()}>
+      <CityBackdrop cityId={city.id} />
       <button onClick={() => setView('world')} style={backStyle(palette)}>← WORLD MAP</button>
 
       <div style={cityHeaderStyle}>
